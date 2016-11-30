@@ -2,7 +2,11 @@
 App For PharosFaces
 
 Universitas Multimedia Nusantara
+
 By Group Chimpuy :
-\nNelson Wijaya - 13110210003
-\nWahyudi Khusnandar - 13110210005
-\nWilliam Suyanto - 13110210001
+
+Nelson Wijaya - 13110210003
+
+Wahyudi Khusnandar - 13110210005
+
+William Suyanto - 13110210001
