@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/topLayout"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true">
+
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@null">
+
+        <com.google.android.gms.samples.vision.face.facetracker.ui.camera.CameraSourcePreview
+            android:id="@+id/preview"
+            android:layout_gravity="center_horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.google.android.gms.samples.vision.face.facetracker.ui.camera.GraphicOverlay
+                android:id="@+id/faceOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center" />
+
+        </com.google.android.gms.samples.vision.face.facetracker.ui.camera.CameraSourcePreview>
+
+        <ImageButton
+            android:id="@+id/cameraButton"
+            android:src="@drawable/icon1"
+            android:background="@null"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="15dp"
+            android:layout_gravity="center|bottom"/>
+
+        <ImageButton
+            android:id="@+id/logoutButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/icon3_disabled"
+            android:background="@null"
+            android:paddingRight="5dp"
+            android:paddingTop="5dp"
+            android:layout_gravity="top|right"
+            />
+    </FrameLayout>
+
+
+
+</LinearLayout>
