@@ -122,13 +122,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     WifiManager wifiManager;
     WifiConfiguration wifiConfiguration;
-    BroadcastReceiver broadcastreceiver;
+    BroadcastReceiver broadcastReceiver;
 
     private List<ScanResult> scanResult;
-
-
-    DataOutputStream dataOutputStream = null;
-    DataInputStream dataInputStream = null;
 
     int faceNumber = 0;
 
@@ -148,6 +144,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     private ImageButton cameraButton;
     private ImageButton logoutButton;
+
+    String username = "";
+    String loginCode = "";
 
     //==============================================================================================
     // Activity Methods
@@ -400,7 +399,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         int bottom = (int) mFaceGraphic.getBottom();
 
         ProgressDialog progress = new ProgressDialog(this);
-        progress.setMessage("Loading");
+        progress.setMessage("Checking");
         progress.show();
 
         try {
@@ -442,14 +441,44 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
             progress.dismiss();
 
-            new AlertDialog.Builder(this)
-                    .setMessage("Berhasil")
-                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            dialogInterface.dismiss();
-                        }
-                    }).show();
+            //Username tidak ditemukan
+            if(username.isEmpty() && loginCode.equals("-1")){
+                new AlertDialog.Builder(this)
+                        .setTitle("Error")
+                        .setMessage("Username not found.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+            }
+
+            //Username ditemukan dan absen tidak telat
+            else if(loginCode.equals("1")){
+                new AlertDialog.Builder(this)
+                        .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+                logoutButton.setEnabled(true);
+            }
+
+            //Username ditemukan dan absen telat
+            else if (loginCode.equals("0")){
+                new AlertDialog.Builder(this)
+                        .setMessage("Login success.\n" + "Welcome, " + username + "!\nYou're late.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+                logoutButton.setEnabled(true);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -460,8 +489,11 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
         byte[] arrayByte;
         Bitmap croppedArea;
-        listenThread(byte[] arrayByte,Bitmap croppedArea){this.arrayByte = arrayByte;
-        this.croppedArea = croppedArea;}
+
+        listenThread(byte[] arrayByte,Bitmap croppedArea) {
+            this.arrayByte = arrayByte;
+            this.croppedArea = croppedArea;
+        }
 
         @Override
         public void run() {
@@ -483,7 +515,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
                 StringBuffer readbuffer = new StringBuffer();
                 StringBuilder sb = new StringBuilder();
-                String line;
 
                 byte inputByte;
 
@@ -493,21 +524,48 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                     }
                     Log.d("ACK",readbuffer.toString());
                     if (readbuffer.toString().contains("ACK")){
-                        Log.d("ACK","Recevied ACK");
+                        Log.d("ACK","Received ACK");
                         break;
                     }
                 }
-
                 dataOutputStream.flush();
+
+                //Kirim gambar
                 dataOutputStream.write(arrayByte);
                 dataOutputStream.flush();
+
+                //Listen response login
+                dataInputStream = new DataInputStream(socket.getInputStream());
+
+                StringBuilder readBufferLogin = new StringBuilder();
+                String responses;
+                String[] response;
+
+                byte inputByteLogin;
+
+                while ((inputByteLogin = dataInputStream.readByte()) != 0){
+                    readBufferLogin.append((char) inputByteLogin);
+                }
+
+                responses = readBufferLogin.toString(); //format terimanya : "username|loginCode" atau "fail"
+                if(responses.equals("fail")){
+                    loginCode = "-1";
+                }
+                else {
+                    response = responses.split("|");
+                    username = response[0];
+                    loginCode = response[1];            //ga telat: 1, telat: 0
+                }
+
+                dataOutputStream.flush();
+
                 socket.close();
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
-
 
     class clientThread implements Runnable {
         Socket socket;
@@ -525,7 +583,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 Log.d("CLIENT THREAD","IM HERE");
                 InetAddress HOST = InetAddress.getByName(IPNUM);
                 socket = new Socket(HOST, PORT);
-
 
             } catch (Exception e) {
                 runOnUiThread(new Runnable() {
@@ -547,7 +604,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         }
 
     }
-
 
     /**
      * Handles the requesting of the camera permission.  This includes
