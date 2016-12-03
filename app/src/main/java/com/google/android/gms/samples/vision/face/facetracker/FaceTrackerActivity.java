@@ -414,7 +414,8 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
-            int bitWidth = bitmap.getWidth();
+
+            /*int bitWidth = bitmap.getWidth();
             int bitHeight = bitmap.getHeight();
 
             int preWidth = mPreview.getWidth();
@@ -431,14 +432,14 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             int width = endx - startx;
             int height = endy - starty;
             Bitmap croppedArea = Bitmap.createBitmap(bitmap, startx, starty, width, height);
-
+            */
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            croppedArea.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
 
-            Log.d("HEIGHT WIDTH", croppedArea.getHeight() + " " + croppedArea.getWidth());
+            Log.d("HEIGHT WIDTH", bitmap.getHeight() + " " + bitmap.getWidth());
             byte[] arrayByte = stream.toByteArray();
 
-            new Thread(new listenThread(arrayByte,croppedArea)).start();
+            new Thread(new listenThread(arrayByte,bitmap)).start();
 
             progress.dismiss();
 
