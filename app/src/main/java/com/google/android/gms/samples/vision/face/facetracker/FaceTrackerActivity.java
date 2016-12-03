@@ -146,6 +146,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     String username = "";
     String loginCode = "";
+    String logoutCode = "";
 
     //==============================================================================================
     // Activity Methods
@@ -202,7 +203,51 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                ProgressDialog progress = new ProgressDialog(FaceTrackerActivity.this);
+                progress.setMessage("Logging out");
+                progress.show();
 
+                try{
+                    new Thread (new sendLogoutThread()).start();    //Buat thread, kirim logout request
+
+                    progress.dismiss();
+
+                    //Logout sukses
+                    if(logoutCode.equals("1")){
+                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                .setMessage("Logout Success")
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).show();
+                    }
+                    //Logout gagal
+                    else if(logoutCode.equals("0")){
+                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                .setMessage("Logout failed")
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).show();
+                    }
+                    else {
+                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                .setMessage("Unknown error")
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).show();
+                    }
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -253,7 +298,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             }
         });
     }
-
 
     static int getSecurity(ScanResult result) {
         if (result.capabilities.contains("WEP")) {
@@ -389,7 +433,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     }
 
-
     private void capturePic(byte[] bytes) {
 
         int left = (int) mFaceGraphic.getLeft();
@@ -479,8 +522,65 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 logoutButton.setEnabled(true);
             }
 
+            else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Alert")
+                        .setMessage("Unknown error")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    class sendLogoutThread implements Runnable{
+        @Override
+        public void run() {
+            try{
+                InetAddress HOST = InetAddress.getByName(IPNUM);
+                Socket socket = new Socket(HOST, PORT);
+
+                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                String data = "LOGOUT;"+username;   //FORMAT: "LOGOUT;username"
+                dataOutputStream.write(data.getBytes());
+                dataOutputStream.flush();
+
+                // menunggu response ack
+                DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+
+                StringBuffer readBuffer = new StringBuffer();
+                byte inputByte;
+                String responses;
+
+                while (true) {
+                    while((inputByte = dataInputStream.readByte())!=0){
+                        readBuffer.append((char)inputByte);
+                    }
+
+                    responses = readBuffer.toString();
+
+                    if(responses.equals("LOGOUT_SUCCESS")){
+                        logoutCode = "1";   //Logout success = 1
+                        break;
+                    }
+                    else {
+                        logoutCode = "0";   //Logout fail = 0
+                        break;
+                    }
+                }
+
+                dataOutputStream.flush();
+                socket.close();
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
         }
     }
 
@@ -542,19 +642,24 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
                 byte inputByteLogin;
 
-                while ((inputByteLogin = dataInputStream.readByte()) != 0){
-                    readBufferLogin.append((char) inputByteLogin);
+                while(true){
+                    while ((inputByteLogin = dataInputStream.readByte()) != 0){
+                        readBufferLogin.append((char) inputByteLogin);
+                    }
+
+                    responses = readBufferLogin.toString(); //format terimanya : "username|loginCode" atau "fail"
+                    if(responses.equals("fail")){
+                        loginCode = "-1";
+                        break;
+                    }
+                    else {
+                        response = responses.split("|");
+                        username = response[0];
+                        loginCode = response[1];            //ga telat: 1, telat: 0
+                        break;
+                    }
                 }
 
-                responses = readBufferLogin.toString(); //format terimanya : "username|loginCode" atau "fail"
-                if(responses.equals("fail")){
-                    loginCode = "-1";
-                }
-                else {
-                    response = responses.split("|");
-                    username = response[0];
-                    loginCode = response[1];            //ga telat: 1, telat: 0
-                }
 
                 dataOutputStream.flush();
                 socket.close();
@@ -563,7 +668,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             }
         }
     }
-
 
     class clientThread implements Runnable {
         Socket socket;
