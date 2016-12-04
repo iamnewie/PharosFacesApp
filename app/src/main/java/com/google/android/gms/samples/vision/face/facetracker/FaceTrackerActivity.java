@@ -122,13 +122,8 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     WifiManager wifiManager;
     WifiConfiguration wifiConfiguration;
-    BroadcastReceiver broadcastreceiver;
 
     private List<ScanResult> scanResult;
-
-
-    DataOutputStream dataOutputStream = null;
-    DataInputStream dataInputStream = null;
 
     int faceNumber = 0;
 
@@ -148,6 +143,11 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     private ImageButton cameraButton;
     private ImageButton logoutButton;
+
+    String username = null;
+    String loginCode = null;
+    String logoutCode = null;
+    Socket socket;
 
     //==============================================================================================
     // Activity Methods
@@ -204,7 +204,51 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                ProgressDialog progress = new ProgressDialog(FaceTrackerActivity.this);
+                progress.setMessage("Logging out");
+                progress.show();
 
+                try{
+                    new Thread (new sendLogoutThread()).start();    //Buat thread, kirim logout request
+
+                    progress.dismiss();
+
+                    //Logout sukses
+                    if(logoutCode.equals("1")){
+                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                .setMessage("Logout Success")
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).show();
+                    }
+                    //Logout gagal
+                    else if(logoutCode.equals("0")){
+                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                .setMessage("Logout failed")
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).show();
+                    }
+                    else {
+                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                .setMessage("Unknown error")
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        dialogInterface.dismiss();
+                                    }
+                                }).show();
+                    }
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -255,7 +299,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             }
         });
     }
-
 
     static int getSecurity(ScanResult result) {
         if (result.capabilities.contains("WEP")) {
@@ -391,69 +434,167 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     }
 
-
     private void capturePic(byte[] bytes) {
 
-        int left = (int) mFaceGraphic.getLeft();
-        int right = (int) mFaceGraphic.getRight();
-        int top = (int) mFaceGraphic.getTop();
-        int bottom = (int) mFaceGraphic.getBottom();
-
         ProgressDialog progress = new ProgressDialog(this);
-        progress.setMessage("Loading");
+        progress.setMessage("Checking");
         progress.show();
 
         try {
-//            InetAddress HOST = InetAddress.getByName(IPNUM);
-//            socket = new Socket(HOST, PORT);
 
             Date now = new Date();
             android.text.format.DateFormat.format("yyyy-MM-dd_hh:mm:ss", now);
-//
             String mPath = Environment.getExternalStorageDirectory().toString() + "/" + now + ".jpg";
 
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
-
-            /*int bitWidth = bitmap.getWidth();
-            int bitHeight = bitmap.getHeight();
-
-            int preWidth = mPreview.getWidth();
-            int preHeight = mPreview.getHeight();
-
-            Log.d("DRAW MAIN", left + " " + right + " " + bottom + " " + top);
-
-            int startx = left * bitWidth / preWidth;
-            int starty = top * bitHeight / preHeight;
-            int endx = right * bitWidth / preWidth;
-            int endy = bottom * bitHeight / preHeight;
-
-            Log.d(TAG, "ASD :" + bitWidth + " " + bitHeight + "ASDASD:" + preWidth + " " + preHeight);
-            int width = endx - startx;
-            int height = endy - starty;
-            Bitmap croppedArea = Bitmap.createBitmap(bitmap, startx, starty, width, height);
-            */
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
 
             Log.d("HEIGHT WIDTH", bitmap.getHeight() + " " + bitmap.getWidth());
             byte[] arrayByte = stream.toByteArray();
 
-            new Thread(new listenThread(arrayByte,bitmap)).start();
+            Thread thread;
+
+            thread = new Thread(new listenThread(arrayByte,bitmap));
+            thread.start();
+            thread.join();
 
             progress.dismiss();
+            Log.d("username",username);
+            //Username tidak ditemukan
+//            if(username.isEmpty() && loginCode.equals("-1")){
+//                new AlertDialog.Builder(this)
+//                        .setTitle("Error")
+//                        .setMessage("Username not found.")
+//                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+//                            @Override
+//                            public void onClick(DialogInterface dialogInterface, int i) {
+//                                dialogInterface.dismiss();
+//                            }
+//                        }).show();
+//            }
+//            //Username ditemukan
+//            else {
+                new AlertDialog.Builder(this)
+                        .setMessage("Username found. Are you "+ username + " ?")
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
 
-            new AlertDialog.Builder(this)
-                    .setMessage("Berhasil")
-                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            dialogInterface.dismiss();
-                        }
-                    }).show();
+                                try {
+                                    Thread thread = new Thread(new confirmThread("yes"));
+                                    thread.start();
+                                    thread.join();
+                                    socket.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                //Absen tidak telat
+                                /*if(loginCode.equals("1")){
+                                    new AlertDialog.Builder(FaceTrackerActivity.this)
+                                            .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
+                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    dialogInterface.dismiss();
+                                                }
+                                            }).show();
+                                    logoutButton.setEnabled(true);
+                                }
+
+                                //Absen telat
+                                else if (loginCode.equals("0")){
+                                    new AlertDialog.Builder(FaceTrackerActivity.this)
+                                            .setMessage("Login success.\n" + "Welcome, " + username + "!\nYou're late.")
+                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    dialogInterface.dismiss();
+                                                }
+                                            }).show();
+                                    logoutButton.setEnabled(true);
+                                }*/
+                                dialogInterface.dismiss();
+                            }
+                        })
+                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                                new Thread(new confirmThread("no")).start();
+                                new AlertDialog.Builder(FaceTrackerActivity.this)
+                                        .setMessage("Please take your self picture again!")
+                                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialogInterface, int i) {
+                                                try{
+                                                    Thread thread = new Thread(new confirmThread("no"));
+                                                    thread.start();
+                                                    thread.join();
+                                                    socket.close();
+                                                } catch (IOException e) {
+                                                    e.printStackTrace();
+                                                } catch (InterruptedException e) {
+                                                    e.printStackTrace();
+                                                }
+                                                dialogInterface.dismiss();
+                                            }
+                                        }).show();
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+//            }
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    class sendLogoutThread implements Runnable{
+        @Override
+        public void run() {
+            try{
+                InetAddress HOST = InetAddress.getByName(IPNUM);
+                Socket socket = new Socket(HOST, PORT);
+
+                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                String data = "LOGOUT;"+username;   //FORMAT: "LOGOUT;username"
+                dataOutputStream.write(data.getBytes());
+                dataOutputStream.flush();
+
+                // menunggu response ack
+                DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+
+                StringBuffer readBuffer = new StringBuffer();
+                byte inputByte;
+                String responses;
+
+                while (true) {
+                    while((inputByte = dataInputStream.readByte())!=0){
+                        readBuffer.append((char)inputByte);
+                    }
+
+                    responses = readBuffer.toString();
+
+                    if(responses.equals("LOGOUT_SUCCESS")){
+                        logoutCode = "1";   //Logout success = 1
+                        break;
+                    }
+                    else {
+                        logoutCode = "0";   //Logout fail = 0
+                        break;
+                    }
+                }
+
+                dataOutputStream.flush();
+                socket.close();
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
         }
     }
 
@@ -461,30 +602,28 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
         byte[] arrayByte;
         Bitmap croppedArea;
-        listenThread(byte[] arrayByte,Bitmap croppedArea){this.arrayByte = arrayByte;
-        this.croppedArea = croppedArea;}
+        listenThread(byte[] arrayByte,Bitmap croppedArea){
+            this.arrayByte = arrayByte;
+            this.croppedArea = croppedArea;
+        }
 
         @Override
         public void run() {
             try {
                 InetAddress HOST = InetAddress.getByName(IPNUM);
-                Socket socket = new Socket(HOST, PORT);
-
-                ServerSocket serverSocket = new ServerSocket(PORT);
-                //Socket server = serverSocket.accept();
+                socket = new Socket(HOST, PORT);
 
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                String data = "SIZE;" + croppedArea.getWidth() + ";" + croppedArea.getHeight();
+                String data = "SIZE;" + croppedArea.getWidth() + ";" + croppedArea.getHeight()+ ";" + arrayByte.length;
+                dataOutputStream.flush();
                 dataOutputStream.write(data.getBytes());
                 dataOutputStream.flush();
 
                 // menunggu response ack
-                //BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
 
                 StringBuffer readbuffer = new StringBuffer();
                 StringBuilder sb = new StringBuilder();
-                String line;
 
                 byte inputByte;
 
@@ -494,59 +633,64 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                     }
                     Log.d("ACK",readbuffer.toString());
                     if (readbuffer.toString().contains("ACK")){
-                        Log.d("ACK","Recevied ACK");
+                        Log.d("ACK","Received ACK");
                         break;
                     }
                 }
 
                 dataOutputStream.flush();
+
+                //Kirim gambar
                 dataOutputStream.write(arrayByte);
                 dataOutputStream.flush();
-                socket.close();
+
+                //Listen response login
+                //dataInputStream = new DataInputStream(socket.getInputStream());
+
+                StringBuilder readBufferLogin = new StringBuilder();
+                String responses;
+                String[] response;
+
+                byte inputByteLogin;
+
+                while(true){
+                    while ((inputByteLogin = dataInputStream.readByte()) != 0){
+                        readBufferLogin.append((char) inputByteLogin);
+                    }
+                    responses = readBufferLogin.toString(); //format terimanya : "username"
+                    Log.d("responses",responses);
+                    username = responses;
+                    break;
+                }
+                dataOutputStream.flush();
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
+    //Kirim konfirmasi ke server bahwa wajah valid
+    class confirmThread implements Runnable{
 
-    class clientThread implements Runnable {
-        Socket socket;
-        byte[] arrayByte;
-        String height;
-        String width;
-
-        public clientThread(byte[] arrayByte) {
-            this.arrayByte = arrayByte;
+        String  message = null;
+        confirmThread(String message){
+            this.message = message;
         }
 
         @Override
         public void run() {
             try {
-                Log.d("CLIENT THREAD","IM HERE");
-                InetAddress HOST = InetAddress.getByName(IPNUM);
-                socket = new Socket(HOST, PORT);
-
-
-            } catch (Exception e) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        new AlertDialog.Builder(getApplicationContext())
-                                .setMessage("Server not found")
-                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        dialogInterface.dismiss();
-                                    }
-                                }).show();
-                    }
-                });
-
+                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                Log.d("Message",message);
+                dataOutputStream.flush();
+                dataOutputStream.write(message.getBytes());
+                dataOutputStream.flush();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
 
+        }
     }
 
 
