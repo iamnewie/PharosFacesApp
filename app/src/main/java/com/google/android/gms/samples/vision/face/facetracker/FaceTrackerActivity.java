@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -49,6 +50,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -177,14 +179,33 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             finish();
         }*/
 
+
         getWifi();
 
         mPreview = (CameraSourcePreview) findViewById(R.id.preview);
         mGraphicOverlay = (GraphicOverlay) findViewById(R.id.faceOverlay);
 
         cameraButton = (ImageButton) findViewById(R.id.cameraButton);
-
         logoutButton = (ImageButton) findViewById(R.id.logoutButton);
+
+        //SHARED PREFERENCES
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean cameraBtnEnabled = preferences.getBoolean("Camera",true);
+        boolean logoutBtnEnabled = preferences.getBoolean("Logout",false);
+        username = preferences.getString("Username","");
+
+        if (cameraBtnEnabled && !logoutBtnEnabled){
+            cameraButton.setEnabled(true);
+            cameraButton.setClickable(true);
+            logoutButton.setEnabled(false);
+            logoutButton.setClickable(false);
+        }
+        else {
+            cameraButton.setEnabled(false);
+            cameraButton.setClickable(false);
+            logoutButton.setEnabled(true);
+            logoutButton.setClickable(true);
+        }
 
         // Check for the camera permission before accessing the camera.  If the
         // permission is not granted yet, request permission.
@@ -460,6 +481,12 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             thread.start();
             thread.join();
 
+            //Simpan username ke SharedPreferences
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(FaceTrackerActivity.this);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putString("Username",username);
+            editor.commit();
+
             progress.dismiss();
             Log.d("username",username);
             //Username tidak ditemukan
@@ -493,7 +520,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                     e.printStackTrace();
                                 }
                                 //Absen tidak telat
-                                /*if(loginCode.equals("1")){
+                                if(loginCode.equals("1")){
                                     new AlertDialog.Builder(FaceTrackerActivity.this)
                                             .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
                                             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -502,7 +529,15 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                                     dialogInterface.dismiss();
                                                 }
                                             }).show();
+                                    cameraButton.setEnabled(false);
                                     logoutButton.setEnabled(true);
+
+                                    //Simpen Button ke SharedPreferences
+                                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(FaceTrackerActivity.this);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.putBoolean("Camera",false);
+                                    editor.putBoolean("Logout",true);
+                                    editor.commit();
                                 }
 
                                 //Absen telat
@@ -515,8 +550,16 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                                     dialogInterface.dismiss();
                                                 }
                                             }).show();
+                                    cameraButton.setEnabled(false);
                                     logoutButton.setEnabled(true);
-                                }*/
+
+                                    //Simpen Button ke SharedPreferences
+                                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(FaceTrackerActivity.this);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.putBoolean("Camera",false);
+                                    editor.putBoolean("Logout",true);
+                                    editor.commit();
+                                }
                                 dialogInterface.dismiss();
                             }
                         })
@@ -645,7 +688,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 dataOutputStream.flush();
 
                 //Listen response login
-                //dataInputStream = new DataInputStream(socket.getInputStream());
 
                 StringBuilder readBufferLogin = new StringBuilder();
                 String responses;
@@ -672,7 +714,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     //Kirim konfirmasi ke server bahwa wajah valid
     class confirmThread implements Runnable{
-
         String  message = null;
         confirmThread(String message){
             this.message = message;
@@ -689,7 +730,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
         }
     }
 
