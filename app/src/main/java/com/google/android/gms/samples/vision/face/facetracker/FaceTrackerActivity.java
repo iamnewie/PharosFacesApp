@@ -147,9 +147,13 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     private ImageButton logoutButton;
 
     String username = null;
+    String userId = null;
     String loginCode = null;
     String logoutCode = null;
     Socket socket;
+
+    SharedPreferences preferences;
+    SharedPreferences.Editor preferenceseditor;
 
     //==============================================================================================
     // Activity Methods
@@ -181,7 +185,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
 
         getWifi();
-
         mPreview = (CameraSourcePreview) findViewById(R.id.preview);
         mGraphicOverlay = (GraphicOverlay) findViewById(R.id.faceOverlay);
 
@@ -189,22 +192,27 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         logoutButton = (ImageButton) findViewById(R.id.logoutButton);
 
         //SHARED PREFERENCES
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences = getSharedPreferences("PHAROS",Context.MODE_PRIVATE);
+        preferenceseditor = preferences.edit();
+
         boolean cameraBtnEnabled = preferences.getBoolean("Camera",true);
         boolean logoutBtnEnabled = preferences.getBoolean("Logout",false);
-        username = preferences.getString("Username","");
 
+        //kalo belom login
         if (cameraBtnEnabled && !logoutBtnEnabled){
             cameraButton.setEnabled(true);
             cameraButton.setClickable(true);
             logoutButton.setEnabled(false);
             logoutButton.setClickable(false);
+            logoutButton.setImageResource(R.drawable.icon3_disabled);
         }
+        //kalo blom logout
         else {
             cameraButton.setEnabled(false);
             cameraButton.setClickable(false);
             logoutButton.setEnabled(true);
             logoutButton.setClickable(true);
+            logoutButton.setImageResource(R.drawable.icon3_enable);
         }
 
         // Check for the camera permission before accessing the camera.  If the
@@ -216,26 +224,32 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             requestCameraPermission();
         }
 
+        logoutButtonClicks();
         cameraButtonClicks();
     }
 
     private void logoutButtonClicks(){
-        logoutButton.setEnabled(false);
-        logoutButton.setClickable(false);
+
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+           public void onClick(View view) {
                 ProgressDialog progress = new ProgressDialog(FaceTrackerActivity.this);
                 progress.setMessage("Logging out");
                 progress.show();
-
                 try{
                     new Thread (new sendLogoutThread()).start();    //Buat thread, kirim logout request
-
                     progress.dismiss();
+                     //Logout sukses
 
-                    //Logout sukses
-                    if(logoutCode.equals("1")){
+                    preferenceseditor.putBoolean("Logout",false);
+                    preferenceseditor.putBoolean("Camera",true);
+                    cameraButton.setEnabled(true);
+                    cameraButton.setClickable(true);
+                    logoutButton.setEnabled(false);
+                    logoutButton.setClickable(false);
+                    logoutButton.setImageResource(R.drawable.icon3_disabled);
+                    preferenceseditor.commit();
+
                         new AlertDialog.Builder(FaceTrackerActivity.this)
                                 .setMessage("Logout Success")
                                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -244,28 +258,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                         dialogInterface.dismiss();
                                     }
                                 }).show();
-                    }
-                    //Logout gagal
-                    else if(logoutCode.equals("0")){
-                        new AlertDialog.Builder(FaceTrackerActivity.this)
-                                .setMessage("Logout failed")
-                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        dialogInterface.dismiss();
-                                    }
-                                }).show();
-                    }
-                    else {
-                        new AlertDialog.Builder(FaceTrackerActivity.this)
-                                .setMessage("Unknown error")
-                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        dialogInterface.dismiss();
-                                    }
-                                }).show();
-                    }
+
                 }
                 catch (Exception e){
                     e.printStackTrace();
@@ -309,7 +302,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                         @Override
                         public void onPictureTaken(byte[] bytes) {
                             try {
-                                //new Thread(new clientThread()).start();
                                 capturePic(bytes);
                             } catch (Exception e) {
                                 Log.d(TAG, "FACE NOT FOUND");
@@ -480,29 +472,8 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             thread = new Thread(new listenThread(arrayByte,bitmap));
             thread.start();
             thread.join();
-
-            //Simpan username ke SharedPreferences
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(FaceTrackerActivity.this);
-            SharedPreferences.Editor editor = preferences.edit();
-            editor.putString("Username",username);
-            editor.commit();
-
             progress.dismiss();
             Log.d("username",username);
-            //Username tidak ditemukan
-//            if(username.isEmpty() && loginCode.equals("-1")){
-//                new AlertDialog.Builder(this)
-//                        .setTitle("Error")
-//                        .setMessage("Username not found.")
-//                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-//                            @Override
-//                            public void onClick(DialogInterface dialogInterface, int i) {
-//                                dialogInterface.dismiss();
-//                            }
-//                        }).show();
-//            }
-//            //Username ditemukan
-//            else {
                 new AlertDialog.Builder(this)
                         .setMessage("Username found. Are you "+ username + " ?")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
@@ -514,13 +485,16 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                     thread.start();
                                     thread.join();
                                     socket.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                                //Absen tidak telat
-                                if(loginCode.equals("1")){
+
+                                    preferenceseditor.putBoolean("Logout",true);
+                                    preferenceseditor.putBoolean("Camera",false);
+                                    preferenceseditor.putString("UserID",userId);
+                                    cameraButton.setEnabled(false);
+                                    cameraButton.setClickable(false);
+                                    logoutButton.setEnabled(true);
+                                    logoutButton.setClickable(true);
+                                    logoutButton.setImageResource(R.drawable.icon3_enable);
+                                    preferenceseditor.commit();
                                     new AlertDialog.Builder(FaceTrackerActivity.this)
                                             .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
                                             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -529,36 +503,13 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                                     dialogInterface.dismiss();
                                                 }
                                             }).show();
-                                    cameraButton.setEnabled(false);
-                                    logoutButton.setEnabled(true);
+                                    //Simpen Button state ke SharedPreferences
 
-                                    //Simpen Button ke SharedPreferences
-                                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(FaceTrackerActivity.this);
-                                    SharedPreferences.Editor editor = preferences.edit();
-                                    editor.putBoolean("Camera",false);
-                                    editor.putBoolean("Logout",true);
-                                    editor.commit();
-                                }
 
-                                //Absen telat
-                                else if (loginCode.equals("0")){
-                                    new AlertDialog.Builder(FaceTrackerActivity.this)
-                                            .setMessage("Login success.\n" + "Welcome, " + username + "!\nYou're late.")
-                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    dialogInterface.dismiss();
-                                                }
-                                            }).show();
-                                    cameraButton.setEnabled(false);
-                                    logoutButton.setEnabled(true);
-
-                                    //Simpen Button ke SharedPreferences
-                                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(FaceTrackerActivity.this);
-                                    SharedPreferences.Editor editor = preferences.edit();
-                                    editor.putBoolean("Camera",false);
-                                    editor.putBoolean("Logout",true);
-                                    editor.commit();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
                                 }
                                 dialogInterface.dismiss();
                             }
@@ -601,37 +552,10 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         public void run() {
             try{
                 InetAddress HOST = InetAddress.getByName(IPNUM);
-                Socket socket = new Socket(HOST, PORT);
-
+                socket = new Socket(HOST, PORT);
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                String data = "LOGOUT;"+username;   //FORMAT: "LOGOUT;username"
+                String data = "LOGOUT;"+ preferences.getString("UserID",null);   //FORMAT: "LOGOUT;userId"
                 dataOutputStream.write(data.getBytes());
-                dataOutputStream.flush();
-
-                // menunggu response ack
-                DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-
-                StringBuffer readBuffer = new StringBuffer();
-                byte inputByte;
-                String responses;
-
-                while (true) {
-                    while((inputByte = dataInputStream.readByte())!=0){
-                        readBuffer.append((char)inputByte);
-                    }
-
-                    responses = readBuffer.toString();
-
-                    if(responses.equals("LOGOUT_SUCCESS")){
-                        logoutCode = "1";   //Logout success = 1
-                        break;
-                    }
-                    else {
-                        logoutCode = "0";   //Logout fail = 0
-                        break;
-                    }
-                }
-
                 dataOutputStream.flush();
                 socket.close();
             }
@@ -699,9 +623,12 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                     while ((inputByteLogin = dataInputStream.readByte()) != 0){
                         readBufferLogin.append((char) inputByteLogin);
                     }
-                    responses = readBufferLogin.toString(); //format terimanya : "username"
+                    responses = readBufferLogin.toString(); //format terimanya : "id;username"
                     Log.d("responses",responses);
-                    username = responses;
+
+                    response = responses.split(";");
+                    userId = response[0];
+                    username = response[1];
                     break;
                 }
                 dataOutputStream.flush();
