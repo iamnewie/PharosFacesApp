@@ -461,6 +461,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialogInterface, int i) {
 
                                 try {
+                                    dialogInterface.dismiss();
                                     Boolean confirmTaskBool = new confirmTask("yes").execute().get();
                                     if(confirmTaskBool) {
                                         socket.close();
@@ -484,6 +485,16 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                                     }
                                                 }).show();
                                     }
+                                    if(!confirmTaskBool){
+                                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                                .setMessage("Anda Sudah Absen Hari ini")
+                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                                        dialogInterface.dismiss();
+                                                    }
+                                                }).show();
+                                    }
 
                                 } catch (IOException e) {
                                     e.printStackTrace();
@@ -500,9 +511,9 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialogInterface, int i) {
 
                                 try {
+                                    dialogInterface.dismiss();
                                     Boolean confirmTaskBool = new confirmTask("no").execute().get();
                                     socket.close();
-                                    dialogInterface.dismiss();
 
                                     new AlertDialog.Builder(FaceTrackerActivity.this)
                                             .setMessage("Please take your self picture again!")
@@ -685,22 +696,17 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 // menunggu response ack
                 DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
 
-                StringBuffer readbuffer = new StringBuffer();
-                StringBuilder sb = new StringBuilder();
+                StringBuilder readbuffer = new StringBuilder();
 
                 byte inputByte;
 
-                while (true) {
-                    while((inputByte = dataInputStream.readByte())!=0){
-                        readbuffer.append((char)inputByte);
-                    }
-                    Log.d("ACK",readbuffer.toString());
-                    if (readbuffer.toString().contains("ACK")){
-                        Log.d("ACK","Received ACK");
-                        break;
-                    }
+                while((inputByte = dataInputStream.readByte())!=0){
+                    readbuffer.append((char)inputByte);
                 }
-
+                Log.d("ACK",readbuffer.toString());
+                if (readbuffer.toString().contains("ACK")){
+                    Log.d("ACK","Received ACK");
+                }
                 dataOutputStream.flush();
 
                 //Kirim gambar
@@ -758,7 +764,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             progressDialog.setMessage("Loading");
             progressDialog.setCancelable(false);
             progressDialog.show();
-
         }
 
         @Override
@@ -767,24 +772,31 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
                 DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
 
-                Log.d("Message",message);
+                Log.d("Message", message);
                 dataOutputStream.flush();
                 dataOutputStream.write(message.getBytes());
                 dataOutputStream.flush();
 
-                StringBuffer stringBuffer = null;
+                StringBuilder stringBuffer = new StringBuilder();
                 byte inputByte;
 
-                while((inputByte = dataInputStream.readByte())!=0){
-                    stringBuffer.append((char)inputByte);
-                }
-                if (stringBuffer.toString().compareTo("SUCCESS") == 0){
-                    Log.d("SUCCESS","Received SUCCESS");
-                    return true;
-                }else
-                    if(stringBuffer.toString().compareTo("FAIL") == 0){
-                        return false;
+                if(message.compareTo("yes") == 0) {
+                    while(true) {
+                        while((inputByte = dataInputStream.readByte())!= 0) {
+                            stringBuffer.append((char) inputByte);
+                        }
+                        Log.d("StringBuffer", stringBuffer.toString());
+                        if (stringBuffer.toString().contains("SUCCESS")) {
+                            Log.d("SUCCESS", "Received SUCCESS");
+                            dataInputStream.close();
+                            return true;
+                        } else if (stringBuffer.toString().contains("FAIL")) {
+                            Log.d("FAIL", "Received FAIL");
+                            dataInputStream.close();
+                            return false;
+                        }
                     }
+                }
 
             } catch (IOException e) {
                 e.printStackTrace();
