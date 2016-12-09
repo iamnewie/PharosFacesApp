@@ -103,6 +103,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Handler;
 
 /**
@@ -449,31 +450,10 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     private void capturePic(byte[] bytes) {
 
-        ProgressDialog progress = new ProgressDialog(this);
-        progress.setMessage("Checking");
-        progress.show();
-
         try {
+            Boolean listenTaskBool = new listenTask(bytes).execute().get();
 
-            Date now = new Date();
-            android.text.format.DateFormat.format("yyyy-MM-dd_hh:mm:ss", now);
-            String mPath = Environment.getExternalStorageDirectory().toString() + "/" + now + ".jpg";
-
-            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-
-            Log.d("HEIGHT WIDTH", bitmap.getHeight() + " " + bitmap.getWidth());
-            byte[] arrayByte = stream.toByteArray();
-
-            Thread thread;
-
-            thread = new Thread(new listenThread(arrayByte,bitmap));
-            thread.start();
-            thread.join();
-            progress.dismiss();
-            Log.d("username",username);
+            if(listenTaskBool){
                 new AlertDialog.Builder(this)
                         .setMessage("Username found. Are you "+ username + " ?")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
@@ -481,34 +461,35 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialogInterface, int i) {
 
                                 try {
-                                    Thread thread = new Thread(new confirmThread("yes"));
-                                    thread.start();
-                                    socket.close();
-                                    thread.join();
+                                    Boolean confirmTaskBool = new confirmTask("yes").execute().get();
+                                    if(confirmTaskBool) {
+                                        socket.close();
 
-                                    preferenceseditor.putBoolean("Logout",true);
-                                    preferenceseditor.putBoolean("Camera",false);
-                                    preferenceseditor.putString("UserID",userId);
-                                    cameraButton.setEnabled(false);
-                                    cameraButton.setClickable(false);
-                                    logoutButton.setEnabled(true);
-                                    logoutButton.setClickable(true);
-                                    logoutButton.setImageResource(R.drawable.icon3_enable);
-                                    preferenceseditor.commit();
-                                    new AlertDialog.Builder(FaceTrackerActivity.this)
-                                            .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
-                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    dialogInterface.dismiss();
-                                                }
-                                            }).show();
-                                    //Simpen Button state ke SharedPreferences
+                                        preferenceseditor.putBoolean("Logout", true);
+                                        preferenceseditor.putBoolean("Camera", false);
+                                        preferenceseditor.putString("UserID", userId);
+                                        cameraButton.setEnabled(false);
+                                        cameraButton.setClickable(false);
+                                        logoutButton.setEnabled(true);
+                                        logoutButton.setClickable(true);
+                                        logoutButton.setImageResource(R.drawable.icon3_enable);
+                                        preferenceseditor.commit();
 
+                                        new AlertDialog.Builder(FaceTrackerActivity.this)
+                                                .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
+                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                                        dialogInterface.dismiss();
+                                                    }
+                                                }).show();
+                                    }
 
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                } catch (ExecutionException e) {
                                     e.printStackTrace();
                                 }
                                 dialogInterface.dismiss();
@@ -518,29 +499,30 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
 
-                                new Thread(new confirmThread("no")).start();
-                                new AlertDialog.Builder(FaceTrackerActivity.this)
-                                        .setMessage("Please take your self picture again!")
-                                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialogInterface, int i) {
-                                                try{
-                                                    Thread thread = new Thread(new confirmThread("no"));
-                                                    thread.start();
-                                                    thread.join();
-                                                    socket.close();
-                                                } catch (IOException e) {
-                                                    e.printStackTrace();
-                                                } catch (InterruptedException e) {
-                                                    e.printStackTrace();
+                                try {
+                                    Boolean confirmTaskBool = new confirmTask("no").execute().get();
+                                    socket.close();
+                                    dialogInterface.dismiss();
+
+                                    new AlertDialog.Builder(FaceTrackerActivity.this)
+                                            .setMessage("Please take your self picture again!")
+                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    dialogInterface.dismiss();
                                                 }
-                                                dialogInterface.dismiss();
-                                            }
-                                        }).show();
-                                dialogInterface.dismiss();
+                                            }).show();
+
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                } catch (ExecutionException e) {
+                                    e.printStackTrace();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }).show();
-//            }
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -643,6 +625,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     class confirmThread implements Runnable{
         String  message = null;
         confirmThread(String message){
+
             this.message = message;
         }
 
@@ -657,6 +640,162 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    class listenTask extends AsyncTask<Void,Void,Boolean>{
+
+        byte[] bytes;
+        ProgressDialog progressDialog;
+
+        listenTask(byte[] bytes){
+            this.bytes = bytes;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(FaceTrackerActivity.this);
+            progressDialog.setMessage("Loading");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                InetAddress HOST = InetAddress.getByName(IPNUM);
+                socket = new Socket(HOST, PORT);
+
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                Log.d("HEIGHT WIDTH", bitmap.getHeight() + " " + bitmap.getWidth());
+
+                //Convert to jpeg format
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                byte[] arrayByte = stream.toByteArray();
+
+                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                String data = "SIZE;" + bitmap.getWidth() + ";" + bitmap.getHeight()+ ";" + arrayByte.length;
+                dataOutputStream.flush();
+                dataOutputStream.write(data.getBytes());
+                dataOutputStream.flush();
+
+                // menunggu response ack
+                DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+
+                StringBuffer readbuffer = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
+
+                byte inputByte;
+
+                while (true) {
+                    while((inputByte = dataInputStream.readByte())!=0){
+                        readbuffer.append((char)inputByte);
+                    }
+                    Log.d("ACK",readbuffer.toString());
+                    if (readbuffer.toString().contains("ACK")){
+                        Log.d("ACK","Received ACK");
+                        break;
+                    }
+                }
+
+                dataOutputStream.flush();
+
+                //Kirim gambar
+                dataOutputStream.write(arrayByte);
+                dataOutputStream.flush();
+
+                //Listen response login
+
+                StringBuilder readBufferLogin = new StringBuilder();
+                String responses;
+                String[] response;
+
+                byte inputByteLogin;
+
+                while ((inputByteLogin = dataInputStream.readByte()) != 0){
+                    readBufferLogin.append((char) inputByteLogin);
+                }
+                responses = readBufferLogin.toString(); //format terimanya : "id;username"
+                Log.d("responses",responses);
+
+                response = responses.split(";");
+                userId = response[0];
+                username = response[1];
+
+                dataOutputStream.flush();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean aBoolean) {
+            super.onPostExecute(aBoolean);
+            progressDialog.dismiss();
+        }
+    }
+
+    class confirmTask extends AsyncTask<Void,Void,Boolean>{
+
+        ProgressDialog progressDialog;
+
+        String message;
+
+        confirmTask(String message){
+            this.message = message;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(FaceTrackerActivity.this);
+
+            progressDialog.setMessage("Loading");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+
+                Log.d("Message",message);
+                dataOutputStream.flush();
+                dataOutputStream.write(message.getBytes());
+                dataOutputStream.flush();
+
+                StringBuffer stringBuffer = null;
+                byte inputByte;
+
+                while((inputByte = dataInputStream.readByte())!=0){
+                    stringBuffer.append((char)inputByte);
+                }
+                if (stringBuffer.toString().compareTo("SUCCESS") == 0){
+                    Log.d("SUCCESS","Received SUCCESS");
+                    return true;
+                }else
+                    if(stringBuffer.toString().compareTo("FAIL") == 0){
+                        return false;
+                    }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean bool) {
+            super.onPostExecute(bool);
+            progressDialog.dismiss();
         }
     }
 
