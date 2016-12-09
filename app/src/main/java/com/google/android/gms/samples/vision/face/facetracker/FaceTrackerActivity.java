@@ -119,7 +119,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     private static final int PORT = 2000;
 
-    private static String IPNUM = "192.168.0.3";
+    private static String IPNUM = "nelsonwijaya.ddns.net";
     private static String WIFIBSSID = "00:26:5a:42:de:4e";
     private static String WIFISSID = "Nelson";
 
@@ -156,13 +156,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     SharedPreferences preferences;
     SharedPreferences.Editor preferenceseditor;
 
-    //==============================================================================================
-    // Activity Methods
-    //==============================================================================================
-
-    /**
-     * Initializes the UI and initiates the creation of a face detector.
-     */
     @Override
     public void onCreate(Bundle icicle) {
 
@@ -558,102 +551,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         }
     }
 
-    class listenThread implements Runnable {
-
-        byte[] arrayByte;
-        Bitmap croppedArea;
-        listenThread(byte[] arrayByte,Bitmap croppedArea){
-            this.arrayByte = arrayByte;
-            this.croppedArea = croppedArea;
-        }
-
-        @Override
-        public void run() {
-            try {
-                InetAddress HOST = InetAddress.getByName(IPNUM);
-                socket = new Socket(HOST, PORT);
-
-                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                String data = "SIZE;" + croppedArea.getWidth() + ";" + croppedArea.getHeight()+ ";" + arrayByte.length;
-                dataOutputStream.flush();
-                dataOutputStream.write(data.getBytes());
-                dataOutputStream.flush();
-
-                // menunggu response ack
-                DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-
-                StringBuffer readbuffer = new StringBuffer();
-                StringBuilder sb = new StringBuilder();
-
-                byte inputByte;
-
-                while (true) {
-                    while((inputByte = dataInputStream.readByte())!=0){
-                        readbuffer.append((char)inputByte);
-                    }
-                    Log.d("ACK",readbuffer.toString());
-                    if (readbuffer.toString().contains("ACK")){
-                        Log.d("ACK","Received ACK");
-                        break;
-                    }
-                }
-
-                dataOutputStream.flush();
-
-                //Kirim gambar
-                dataOutputStream.write(arrayByte);
-                dataOutputStream.flush();
-
-                //Listen response login
-
-                StringBuilder readBufferLogin = new StringBuilder();
-                String responses;
-                String[] response;
-
-                byte inputByteLogin;
-
-                while(true){
-                    while ((inputByteLogin = dataInputStream.readByte()) != 0){
-                        readBufferLogin.append((char) inputByteLogin);
-                    }
-                    responses = readBufferLogin.toString(); //format terimanya : "id;username"
-                    Log.d("responses",responses);
-
-                    response = responses.split(";");
-                    userId = response[0];
-                    username = response[1];
-                    break;
-                }
-                dataOutputStream.flush();
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    //Kirim konfirmasi ke server bahwa wajah valid
-    class confirmThread implements Runnable{
-        String  message = null;
-        confirmThread(String message){
-
-            this.message = message;
-        }
-
-        @Override
-        public void run() {
-            try {
-                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                Log.d("Message",message);
-                dataOutputStream.flush();
-                dataOutputStream.write(message.getBytes());
-                dataOutputStream.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     class listenTask extends AsyncTask<Void,Void,Boolean>{
 
         byte[] bytes;
@@ -675,8 +572,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         @Override
         protected Boolean doInBackground(Void... voids) {
             try {
-                InetAddress HOST = InetAddress.getByName(IPNUM);
-                socket = new Socket(HOST, PORT);
+                socket = new Socket(IPNUM, PORT);
 
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
@@ -812,11 +708,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     }
 
 
-    /**
-     * Handles the requesting of the camera permission.  This includes
-     * showing a "Snackbar" message of why the permission is needed then
-     * sending the request.
-     */
     private void requestCameraPermission() {
         Log.w(TAG, "Camera permission is not granted. Requesting permission");
 
@@ -844,11 +735,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 .show();
     }
 
-    /**
-     * Creates and starts the camera.  Note that this uses a higher resolution in comparison
-     * to other detection examples to enable the barcode detector to detect small barcodes
-     * at long distances.
-     */
     private void createCameraSource() {
 
         Context context = getApplicationContext();
@@ -882,18 +768,12 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     }
 
 
-    /**
-     * Restarts the camera.
-     */
     @Override
     protected void onResume() {
         super.onResume();
         startCameraSource();
     }
 
-    /**
-     * Stops the camera.
-     */
     @Override
     protected void onPause() {
         super.onPause();
@@ -901,10 +781,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         //progressDialog.dismiss();
     }
 
-    /**
-     * Releases the resources associated with the camera source, the associated detector, and the
-     * rest of the processing pipeline.
-     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -913,22 +789,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Callback for the result from requesting permissions. This method
-     * is invoked for every call on {@link #requestPermissions(String[], int)}.
-     * <p>
-     * <strong>Note:</strong> It is possible that the permissions request interaction
-     * with the user is interrupted. In this case you will receive empty permissions
-     * and results arrays which should be treated as a cancellation.
-     * </p>
-     *
-     * @param requestCode  The request code passed in {@link #requestPermissions(String[], int)}.
-     * @param permissions  The requested permissions. Never null.
-     * @param grantResults The grant results for the corresponding permissions
-     *                     which is either {@link PackageManager#PERMISSION_GRANTED}
-     *                     or {@link PackageManager#PERMISSION_DENIED}. Never null.
-     * @see #requestPermissions(String[], int)
-     */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode != RC_HANDLE_CAMERA_PERM) {
@@ -960,15 +820,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 .show();
     }
 
-    //==============================================================================================
-    // Camera Source Preview
-    //==============================================================================================
-
-    /**
-     * Starts or restarts the camera source, if it exists.  If the camera source doesn't exist yet
-     * (e.g., because onResume was called before the camera source was created), this will be called
-     * again when the camera source is created.
-     */
     private void startCameraSource() {
 
         // check that the device has play services available.
@@ -992,25 +843,12 @@ public final class FaceTrackerActivity extends AppCompatActivity {
         }
     }
 
-    //==============================================================================================
-    // Graphic Face Tracker
-    //==============================================================================================
-
-    /**
-     * Factory for creating a face tracker to be associated with a new face.  The multiprocessor
-     * uses this factory to create face trackers as needed -- one for each individual.
-     */
     private class GraphicFaceTrackerFactory implements MultiProcessor.Factory<Face> {
         @Override
         public Tracker<Face> create(Face face) {
             return new GraphicFaceTracker(mGraphicOverlay);
         }
     }
-
-    /**
-     * Face tracker for each detected individual. This maintains a face graphic within the app's
-     * associated face overlay.
-     */
 
     private class GraphicFaceTracker extends Tracker<Face> {
 
