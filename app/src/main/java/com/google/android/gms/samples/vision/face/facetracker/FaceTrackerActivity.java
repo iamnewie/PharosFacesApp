@@ -483,8 +483,8 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                 try {
                                     Thread thread = new Thread(new confirmThread("yes"));
                                     thread.start();
-                                    thread.join();
                                     socket.close();
+                                    thread.join();
 
                                     preferenceseditor.putBoolean("Logout",true);
                                     preferenceseditor.putBoolean("Camera",false);
