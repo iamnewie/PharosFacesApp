@@ -125,10 +125,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     WifiManager wifiManager;
     WifiConfiguration wifiConfiguration;
-<<<<<<< HEAD
-    BroadcastReceiver broadcastReceiver;
-=======
->>>>>>> origin/master
 
     private List<ScanResult> scanResult;
 
@@ -151,10 +147,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
     private ImageButton cameraButton;
     private ImageButton logoutButton;
 
-<<<<<<< HEAD
-    String username = "";
-    String loginCode = "";
-=======
     String username = null;
     String userId = null;
     String loginCode = null;
@@ -163,7 +155,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     SharedPreferences preferences;
     SharedPreferences.Editor preferenceseditor;
->>>>>>> origin/master
 
     //==============================================================================================
     // Activity Methods
@@ -459,18 +450,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
     private void capturePic(byte[] bytes) {
 
-<<<<<<< HEAD
-        int left = (int) mFaceGraphic.getLeft();
-        int right = (int) mFaceGraphic.getRight();
-        int top = (int) mFaceGraphic.getTop();
-        int bottom = (int) mFaceGraphic.getBottom();
-
-        ProgressDialog progress = new ProgressDialog(this);
-        progress.setMessage("Checking");
-        progress.show();
-
-=======
->>>>>>> origin/master
         try {
             Boolean listenTaskBool = new listenTask(bytes).execute().get();
 
@@ -531,45 +510,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
 
-<<<<<<< HEAD
-            //Username tidak ditemukan
-            if(username.isEmpty() && loginCode.equals("-1")){
-                new AlertDialog.Builder(this)
-                        .setTitle("Error")
-                        .setMessage("Username not found.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                dialogInterface.dismiss();
-                            }
-                        }).show();
-            }
-
-            //Username ditemukan dan absen tidak telat
-            else if(loginCode.equals("1")){
-                new AlertDialog.Builder(this)
-                        .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                dialogInterface.dismiss();
-                            }
-                        }).show();
-                logoutButton.setEnabled(true);
-            }
-
-            //Username ditemukan dan absen telat
-            else if (loginCode.equals("0")){
-                new AlertDialog.Builder(this)
-                        .setMessage("Login success.\n" + "Welcome, " + username + "!\nYou're late.")
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                dialogInterface.dismiss();
-                            }
-                        }).show();
-                logoutButton.setEnabled(true);
-=======
                                 try {
                                     dialogInterface.dismiss();
                                     Boolean confirmTaskBool = new confirmTask("no").execute().get();
@@ -593,7 +533,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                                 }
                             }
                         }).show();
->>>>>>> origin/master
             }
 
         } catch (Exception e) {
@@ -623,12 +562,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
         byte[] arrayByte;
         Bitmap croppedArea;
-<<<<<<< HEAD
-
-        listenThread(byte[] arrayByte,Bitmap croppedArea) {
-=======
         listenThread(byte[] arrayByte,Bitmap croppedArea){
->>>>>>> origin/master
             this.arrayByte = arrayByte;
             this.croppedArea = croppedArea;
         }
@@ -663,6 +597,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                         break;
                     }
                 }
+
                 dataOutputStream.flush();
 
                 //Kirim gambar
@@ -670,10 +605,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 dataOutputStream.flush();
 
                 //Listen response login
-<<<<<<< HEAD
-                dataInputStream = new DataInputStream(socket.getInputStream());
-=======
->>>>>>> origin/master
 
                 StringBuilder readBufferLogin = new StringBuilder();
                 String responses;
@@ -681,26 +612,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
                 byte inputByteLogin;
 
-<<<<<<< HEAD
-                while ((inputByteLogin = dataInputStream.readByte()) != 0){
-                    readBufferLogin.append((char) inputByteLogin);
-                }
-
-                responses = readBufferLogin.toString(); //format terimanya : "username|loginCode" atau "fail"
-                if(responses.equals("fail")){
-                    loginCode = "-1";
-                }
-                else {
-                    response = responses.split("|");
-                    username = response[0];
-                    loginCode = response[1];            //ga telat: 1, telat: 0
-                }
-
-                dataOutputStream.flush();
-
-                socket.close();
-
-=======
                 while(true){
                     while ((inputByteLogin = dataInputStream.readByte()) != 0){
                         readBufferLogin.append((char) inputByteLogin);
@@ -715,30 +626,18 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 }
                 dataOutputStream.flush();
 
->>>>>>> origin/master
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-<<<<<<< HEAD
-    class clientThread implements Runnable {
-        Socket socket;
-        byte[] arrayByte;
-        String height;
-        String width;
-
-        public clientThread(byte[] arrayByte) {
-            this.arrayByte = arrayByte;
-=======
     //Kirim konfirmasi ke server bahwa wajah valid
     class confirmThread implements Runnable{
         String  message = null;
         confirmThread(String message){
 
             this.message = message;
->>>>>>> origin/master
         }
 
         @Override
@@ -779,8 +678,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
                 InetAddress HOST = InetAddress.getByName(IPNUM);
                 socket = new Socket(HOST, PORT);
 
-<<<<<<< HEAD
-=======
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -836,7 +733,6 @@ public final class FaceTrackerActivity extends AppCompatActivity {
 
                 dataOutputStream.flush();
 
->>>>>>> origin/master
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -914,6 +810,7 @@ public final class FaceTrackerActivity extends AppCompatActivity {
             progressDialog.dismiss();
         }
     }
+
 
     /**
      * Handles the requesting of the camera permission.  This includes
