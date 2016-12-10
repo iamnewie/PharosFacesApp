@@ -60,20 +60,11 @@ public class CameraFragment extends Fragment {
 
     private static final String TAG = "FaceTracker";
 
-    private static final int SECURITY_NONE = 0;
-    private static final int SECURITY_PSK = 1;
-    private static final int SECURITY_WEP = 3;
 
     private static final int PORT = 2000;
 
     private static String IPNUM = "192.168.0.3";
-    private static String WIFIBSSID = "00:26:5a:42:de:4e";
-    private static String WIFISSID = "Nelson";
 
-    WifiManager wifiManager;
-    WifiConfiguration wifiConfiguration;
-
-    private List<ScanResult> scanResult;
 
     int faceNumber = 0;
 
@@ -96,8 +87,6 @@ public class CameraFragment extends Fragment {
 
     String username = null;
     String userId = null;
-    String loginCode = null;
-    String logoutCode = null;
     Socket socket;
 
     SharedPreferences preferences;
@@ -108,9 +97,6 @@ public class CameraFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        wifiManager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
-        wifiConfiguration = new WifiConfiguration();
-        getWifi();
 
 //        ----------SHARED PREFERENCES------------------------
         preferences = getContext().getSharedPreferences("PHAROS",Context.MODE_PRIVATE);
@@ -249,139 +235,6 @@ public class CameraFragment extends Fragment {
         });
     }
 
-    static int getSecurity(ScanResult result) {
-        if (result.capabilities.contains("WEP")) {
-            return SECURITY_WEP;
-        } else if (result.capabilities.contains("PSK")) {
-            return SECURITY_PSK;
-        }
-        return SECURITY_NONE;
-    }
-
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-    public void getWifi() {
-
-        Intent intent = new Intent("android.location.GPS_ENABLED_CHANGE");
-        AlertDialog.Builder builder;
-
-        final EditText passwordInput = new EditText(getContext());
-        ConnectivityManager connectivityManager = (ConnectivityManager) getContext().getSystemService(getContext().CONNECTIVITY_SERVICE);
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-
-        wifiConfiguration.BSSID = WIFIBSSID;
-        List<WifiConfiguration> wifiConfigurations;
-
-        if (wifiManager.isWifiEnabled()) {
-            if (wifiManager.isScanAlwaysAvailable()) {
-                // TODO: 11/12/2016  jika sudah terkoneksi wifi network ..., jika belum ..., jika wifinya bukan wifi yg diinginkan ...
-
-                wifiConfigurations = wifiManager.getConfiguredNetworks();
-
-                Log.d("IS CONNECTING", wifiManager.getConnectionInfo().toString());
-//                Jika koneksi wifi bukan dar access point yang diinginkan / jika tidak ada access point yang terkoneksi
-                if (!wifiManager.getConnectionInfo().getBSSID().equals(WIFIBSSID)) {
-
-                    scanResult = wifiManager.getScanResults();
-
-                    if (scanResult != null) {
-                        Log.v("SCAN_RESULT", "SCAN RESULT SUCCESSFUL");
-                        for (int i = 0; i < scanResult.size(); i++) {
-                            Log.v("SCAN_RESULT :", scanResult.get(i).BSSID);
-                            if (scanResult.get(i).BSSID.equals(WIFIBSSID)) {
-                                Log.v("SCAN_RESULT :", scanResult.get(i).SSID);
-                                wifiConfiguration.BSSID = WIFIBSSID;
-                                wifiConfiguration.SSID = scanResult.get(i).SSID;
-
-                                final int ENCRYPTION = getSecurity(scanResult.get(i));
-
-                                passwordInput.setTransformationMethod(PasswordTransformationMethod.getInstance());
-
-                                new AlertDialog.Builder(getContext())
-                                        .setMessage("Enter Wifi password for \" " + WIFISSID + "\"")
-                                        .setView(passwordInput)
-                                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialogInterface, int j) {
-                                                String WIFI_PASSWORD = passwordInput.getText().toString();
-                                                switch (ENCRYPTION) {
-                                                    case SECURITY_WEP:
-                                                        wifiConfiguration.wepKeys[0] = "\"" + WIFI_PASSWORD + "\"";
-                                                        wifiConfiguration.wepTxKeyIndex = 0;
-                                                        wifiConfiguration.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-                                                        wifiConfiguration.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);
-                                                        break;
-                                                    case SECURITY_PSK:
-                                                        wifiConfiguration.preSharedKey = "\"" + WIFI_PASSWORD + "\"";
-                                                        break;
-                                                    case SECURITY_NONE:
-                                                        wifiConfiguration.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-                                                        break;
-                                                }
-
-                                                /*registerReceiver(new BroadcastReceiver() {
-                                                    @Override
-                                                    public void onReceive(Context context, Intent intent) {
-                                                        progressDialog.dismiss();
-                                                    }
-                                                }, new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION));
-                                                wifiManager.enableNetwork(wifiManager.addNetwork(wifiConfiguration), true);*/
-                                            }
-                                        })
-                                        .setCancelable(false)
-                                        .show();
-                                break;
-                            }
-                            if (i == scanResult.size()) {
-                                new AlertDialog.Builder(getContext())
-                                        .setMessage("We cannot find the office wifi network for the app, the wifi office wifi network is needed for this app to work")
-                                        .setPositiveButton("TRY AGAIN", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialogInterface, int j) {
-                                                getWifi();
-                                            }
-                                        })
-                                        .setNegativeButton("EXIT", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialogInterface, int i) {
-                                                getActivity().finish();
-                                            }
-                                        })
-                                        .setCancelable(false)
-                                        .show();
-                            }
-                        }
-                    }
-                } else {
-                    Log.d("location", "IM HERE");
-                }
-            } else {
-                new AlertDialog.Builder(getContext())
-                        .setMessage("Wifi Scanning is needed for this app")
-                        .setPositiveButton("Enable Wifi Scanning", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                startActivityForResult(new Intent(WifiManager.ACTION_REQUEST_SCAN_ALWAYS_AVAILABLE), 100);
-                                getWifi();
-                            }
-                        })
-                        .setCancelable(false)
-                        .show();
-            }
-        } else {
-            new AlertDialog.Builder(getContext())
-                    .setMessage("Wifi is needed for this app")
-                    .setPositiveButton("Enable Wifi", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            wifiManager.setWifiEnabled(true);
-                            getWifi();
-                        }
-                    })
-                    .setCancelable(false)
-                    .show();
-        }
-
-    }
 
     private void capturePic(byte[] bytes) {
 
