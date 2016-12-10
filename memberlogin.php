@@ -21,10 +21,8 @@
 		$retval = mysql_query($insertQuery, $connection);
 		
 		if (! $retval){
-			echo($insertQuery);
+			echo("success");
 		}
-		
-		//echo "success";
 	} 
 	else {
 		echo "failed";
