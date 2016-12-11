@@ -32,39 +32,23 @@ import java.net.URL;
  */
 public class LoginFragment extends Fragment {
 
-    String username="";
-    String password="";
+    String username = "";
+    String password = "";
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //super.onCreateView(inflater, container, savedInstanceState);
-        if (android.os.Build.VERSION.SDK_INT > 9)
-        {
+        if (android.os.Build.VERSION.SDK_INT > 9) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
-        return inflater.inflate(R.layout.loginlayout,container,false);
+        return inflater.inflate(R.layout.loginlayout, container, false);
     }
 
-    @Override
-<<<<<<< HEAD
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        //warning-nya login manual
-        new AlertDialog.Builder(getContext())
-                .setMessage("Only use manual login in case you can't login via face recognition.")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        dialogInterface.dismiss();
-                    }
-                }).show();
-=======
     public void setMenuVisibility(boolean menuVisible) {
         super.setMenuVisibility(menuVisible);
-        if(menuVisible){
+        if (menuVisible) {
             new AlertDialog.Builder(getContext())
                     .setMessage("Only use manual login in case you can't login via face recognition.")
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -74,7 +58,6 @@ public class LoginFragment extends Fragment {
                         }
                     }).show();
         }
->>>>>>> origin/master
     }
 
     @Override
@@ -97,13 +80,13 @@ public class LoginFragment extends Fragment {
         });
     }
 
-    protected void tryLogin(String username, String password){
+    protected void tryLogin(String username, String password) {
         HttpURLConnection connection;
         OutputStreamWriter request;
 
         URL url = null;
         String response = null;
-        String parameters = "username="+username+"&password="+password;
+        String parameters = "username=" + username + "&password=" + password;
 
         try {
             url = new URL("http://192.168.1.108/pharosfaces/memberlogin.php"); //URL buat login nya
@@ -121,21 +104,19 @@ public class LoginFragment extends Fragment {
             InputStreamReader inputStreamReader = new InputStreamReader(connection.getInputStream());
             BufferedReader reader = new BufferedReader(inputStreamReader);
             StringBuilder stringBuilder = new StringBuilder();
-            while ((line = reader.readLine()) != null)
-            {
+            while ((line = reader.readLine()) != null) {
                 stringBuilder.append(line);
             }
             // Response from server after login process will be stored in response variable.
             response = stringBuilder.toString();
             // You can perform UI operations here
-            Toast.makeText(getContext(),"Login "+ response, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
             inputStreamReader.close();
             reader.close();
 
             //kirim username ke activity
-            if(!username.equals("")) ((MainActivity)getActivity()).setUsername(username);
-        }
-        catch (IOException e){
+            if (!username.equals("")) ((MainActivity) getActivity()).setUsername(username);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
