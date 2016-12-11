@@ -202,8 +202,6 @@ public final class MainActivity extends AppCompatActivity {
     void checkWifi(final WifiManager wifiManager){
         Log.d("WIFI CHECK",wifiManager.getConnectionInfo().toString());
 
-        if(wifiManager.getWifiState()
-
         if(wifiManager.getConnectionInfo().getBSSID() == null){
             new AlertDialog.Builder(this)
                     .setMessage("Please Connect to wifi network named '"+TARGET_WIFI_SSID+"'")

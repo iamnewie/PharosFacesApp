@@ -36,7 +36,7 @@
             android:name=".MainActivity"
             android:icon="@drawable/icon"
             android:label="PharosFaces"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
