@@ -150,7 +150,6 @@ class FaceGraphic extends GraphicOverlay.Graphic {
         top = y - yOffset;
         right = x + xOffset;
         bottom = y + yOffset;
-        Log.d("DRAW",left+" "+right+" "+bottom+" "+top);
         canvas.drawRect(left, top, right, bottom, mBoxPaint);
     }
 
