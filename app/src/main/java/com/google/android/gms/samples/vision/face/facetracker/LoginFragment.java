@@ -32,7 +32,6 @@ import java.net.URL;
  */
 public class LoginFragment extends Fragment {
 
-    //private ProgressDialog progressDialog;
     String username;
     String password;
 
@@ -109,12 +108,12 @@ public class LoginFragment extends Fragment {
             StringBuilder stringBuilder = new StringBuilder();
             while ((line = reader.readLine()) != null)
             {
-                stringBuilder.append(line + "\n");
+                stringBuilder.append(line);
             }
             // Response from server after login process will be stored in response variable.
             response = stringBuilder.toString();
             // You can perform UI operations here
-            Toast.makeText(getContext(),"Message from Server: \nLogin "+ response, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(),"Login "+ response, Toast.LENGTH_SHORT).show();
             inputStreamReader.close();
             reader.close();
 
@@ -123,25 +122,4 @@ public class LoginFragment extends Fragment {
             e.printStackTrace();
         }
     }
-
-
-    /*
-    class Login extends AsyncTask<String, String, String> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            progressDialog = new ProgressDialog(getContext());
-            progressDialog.setMessage("Please wait..");
-            progressDialog.setIndeterminate(false);
-            progressDialog.setCancelable(true);
-            progressDialog.show();
-        }
-
-        @Override
-        protected String doInBackground(String... strings) {
-
-
-            return null;
-        }
-    }*/
 }
