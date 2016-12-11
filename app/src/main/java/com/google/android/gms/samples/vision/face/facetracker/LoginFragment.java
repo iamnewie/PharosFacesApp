@@ -32,8 +32,8 @@ import java.net.URL;
  */
 public class LoginFragment extends Fragment {
 
-    String username;
-    String password;
+    String username="";
+    String password="";
 
     @Nullable
     @Override
@@ -48,8 +48,10 @@ public class LoginFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        //warning-nya login manual
         new AlertDialog.Builder(getContext())
                 .setMessage("Only use manual login in case you can't login via face recognition.")
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -63,8 +65,6 @@ public class LoginFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
-        //warning-nya login manual
 
         final EditText usernameEdit = (EditText) getView().findViewById(R.id.username_edit);
         final EditText passwordEdit = (EditText) getView().findViewById(R.id.password_edit);
@@ -117,6 +117,8 @@ public class LoginFragment extends Fragment {
             inputStreamReader.close();
             reader.close();
 
+            //kirim username ke activity
+            if(!username.equals("")) ((MainActivity)getActivity()).setUsername(username);
         }
         catch (IOException e){
             e.printStackTrace();

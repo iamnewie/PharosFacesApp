@@ -12,7 +12,7 @@
     <TableRow>
         <TextView
             android:text="Login"
-            android:textSize="32dp"
+            android:textSize="32sp"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
