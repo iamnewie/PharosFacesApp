@@ -77,6 +77,7 @@ public final class MainActivity extends AppCompatActivity {
     private static String TARGET_WIFI_BSSID = "00:26:5a:42:de:4e";
     private static String TARGET_WIFI_SSID = "Nelson";
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -418,4 +419,14 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Username kalo uda login
+    String username = "";
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getUsername() {
+        return username;
+    }
 }
