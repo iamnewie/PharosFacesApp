@@ -48,16 +48,18 @@ public class LoginFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        new AlertDialog.Builder(getContext())
-                .setMessage("Only use manual login in case you can't login via face recognition.")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        dialogInterface.dismiss();
-                    }
-                }).show();
+    public void setMenuVisibility(boolean menuVisible) {
+        super.setMenuVisibility(menuVisible);
+        if(menuVisible){
+            new AlertDialog.Builder(getContext())
+                    .setMessage("Only use manual login in case you can't login via face recognition.")
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            dialogInterface.dismiss();
+                        }
+                    }).show();
+        }
     }
 
     @Override
