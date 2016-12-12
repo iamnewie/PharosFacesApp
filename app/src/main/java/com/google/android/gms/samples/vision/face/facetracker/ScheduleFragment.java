@@ -1,5 +1,8 @@
 package com.google.android.gms.samples.vision.face.facetracker;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.annotation.Nullable;
@@ -9,17 +12,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -29,7 +36,9 @@ public class ScheduleFragment extends Fragment {
     String username = "";
     String fullName = "-";
     String staffId = "-";
+    String image="-";
     ArrayList<String> dateList;
+    ImageView imageView;
 
     @Nullable
     @Override
@@ -39,13 +48,14 @@ public class ScheduleFragment extends Fragment {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
+
         return inflater.inflate(R.layout.schedulelayout, container, false);
     }
 
     @Override
     public void onStart() {
         super.onStart();
-
+        imageView = (ImageView) getView().findViewById(R.id.profile_image);
         username = ((MainActivity) getActivity()).getUsername();
     }
 
@@ -79,7 +89,7 @@ public class ScheduleFragment extends Fragment {
         String parameters = "username=" + username;
 
         try {
-            url = new URL("http://192.168.1.108/pharosfaces/getschedule.php"); //URL buat login nya
+            url = new URL("http://192.168.0.3/pharosfaces/getschedule.php"); //URL buat login nya
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
@@ -100,12 +110,15 @@ public class ScheduleFragment extends Fragment {
             // Response from server after login process will be stored in response variable.
             response = stringBuilder.toString();
 
-            String[] splitResponse = response.split(";"); //FORMAT: id;name;date;date;date;date;dst
+            String[] splitResponse = response.split(";"); //FORMAT: id;name;image;date;date;date;date;dst
             staffId = splitResponse[0];
             fullName = splitResponse[1];
-            for (int i = 2; i < splitResponse.length - 1; i++) {
+            image = splitResponse[2];
+            Log.d("Image",image);
+            for (int i = 3; i < splitResponse.length - 1; i++) {
                 dateList.add(splitResponse[i]);
             }
+            new getImage(imageView,image).execute();
 
             // You can perform UI operations here
 
@@ -113,6 +126,40 @@ public class ScheduleFragment extends Fragment {
             reader.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    class getImage extends AsyncTask<Void,Void,Bitmap>{
+
+        ImageView imageView;
+        String imagename;
+        getImage(ImageView imageView, String imagename){
+            this.imageView = imageView;
+            this.imagename = imagename;
+        }
+
+        @Override
+        protected Bitmap doInBackground(Void... voids) {
+            Bitmap profilepic=null;
+            try {
+                URL url = new URL("http://192.168.0.3/pharosfaces/images/"+ imagename);
+                InputStream inputStream = url.openStream();
+                profilepic= BitmapFactory.decodeStream(inputStream);
+                inputStream.close();
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return profilepic;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+            imageView.setImageBitmap(bitmap);
         }
     }
 }

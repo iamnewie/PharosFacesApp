@@ -14,8 +14,7 @@
             android:layout_width="100dp"
             android:layout_height="match_parent"
             android:contentDescription="Profile Image"
-            android:padding="5dp"
-            android:src="@drawable/icon" />
+            android:padding="5dp"/>
 
         <TableLayout
             android:layout_width="match_parent"

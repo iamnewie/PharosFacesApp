@@ -63,15 +63,9 @@ public final class MainActivity extends AppCompatActivity {
     ViewPager viewPager;
     PagerAdapter pagerAdapter;
 
-    //    -----------Wifi security code-------------
-    private static final int SECURITY_NONE = 0;
-    private static final int SECURITY_PSK = 1;
-    private static final int SECURITY_WEP = 3;
-//    -----------------------------------------
-
     WifiManager wifiManager;
     WifiConfiguration wifiConfiguration;
-    private List<ScanResult> scanResult;
+    ConnectivityManager connectivityManager;
 
     //    Target Wifi BSSID dan SSID
     private static String TARGET_WIFI_BSSID = "00:26:5a:42:de:4e";
@@ -97,21 +91,21 @@ public final class MainActivity extends AppCompatActivity {
         }
 //        -------------------------------------------------------------------------
 
+//       ------- Instantiasi intent filter untuk broadcast recevier------
         IntentFilter intentFilter = new IntentFilter();
-        IntentFilter intentFilter1 = new IntentFilter();
-
         intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
 
         IntentFilter connectionIntentFilter = new IntentFilter();
-        connectionIntentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        connectionIntentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+//        ---------------------------------------------------------------------
 
 
         wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+//        connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         wifiConfiguration = new WifiConfiguration();
 
         registerReceiver(new wifiEnabled(wifiManager),intentFilter);
-//        registerReceiver(new wifiConnecting(connectivityManager),connectionIntentFilter);
+        registerReceiver(new wifiConnecting(wifiManager),connectionIntentFilter);
 
 //       -------- Deklarasi view pager---------
         viewPager = (ViewPager) findViewById(R.id.fragmentFrame);
@@ -123,22 +117,8 @@ public final class MainActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        checkWifi(wifiManager);
-    }
 
-    /*static int getSecurity(ScanResult result) {
-        if (result.capabilities.contains("WEP")) {
-            return SECURITY_WEP;
-        } else if (result.capabilities.contains("PSK")) {
-            return SECURITY_PSK;
-        }
-        return SECURITY_NONE;
-    }*/
-
-
+//    Class sebuah broadcast receiver yang listen adanya perubahan pada state wifi
     class wifiEnabled extends BroadcastReceiver {
 
         WifiManager wifiManager;
@@ -152,6 +132,7 @@ public final class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
 
             int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
+            NetworkInfo networkInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
 
             switch (wifiState) {
 //              ---------------jika wifi belom di nyalakan-------------
@@ -163,7 +144,6 @@ public final class MainActivity extends AppCompatActivity {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
                                         wifiManager.setWifiEnabled(true);
-                                        checkWifi(wifiManager);
                                     }
                                 })
 //                              Jika tidak, keluar dari aplikasi
@@ -184,44 +164,59 @@ public final class MainActivity extends AppCompatActivity {
 
     class wifiConnecting extends BroadcastReceiver{
 
-        ConnectivityManager connectivityManager;
-        wifiConnecting(ConnectivityManager connectivityManager){
-            this.connectivityManager = connectivityManager;
+//        Membuat sebuah semaphore receiver hanya dapat sekali
+        boolean firstConnect = true;
+        WifiManager wifiManager;
+        wifiConnecting(WifiManager wifiManager){
+            this.wifiManager = wifiManager;
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-            if(networkInfo.getType() == ConnectivityManager.TYPE_WIFI){
-                checkWifi(wifiManager);
+            NetworkInfo networkInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+            if(networkInfo.isConnected()) {
+                if(firstConnect){
+                    Log.v("Wifi listener", "Wifi is Connected to a network");
+                    checkWifi(wifiManager);
+                    firstConnect = false;
+                }
+                else
+                {
+                    firstConnect = true;
+                }
             }
         }
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkWifi(wifiManager);
+    }
+
+    //    class wifiConnecting extends BroadcastReceiver{
+//
+//        ConnectivityManager connectivityManager;
+//        wifiConnecting(ConnectivityManager connectivityManager){
+//            this.connectivityManager = connectivityManager;
+//        }
+//
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+//            if(networkInfo.getType() == ConnectivityManager.TYPE_WIFI){
+//                checkWifi(wifiManager);
+//            }
+//        }
+//    }
+//
+
 
 
     void checkWifi(final WifiManager wifiManager){
         Log.d("WIFI CHECK",wifiManager.getConnectionInfo().toString());
 
-        if(wifiManager.getConnectionInfo().getBSSID() == null){
-            new AlertDialog.Builder(this)
-                    .setMessage("Please Connect to wifi network named '"+TARGET_WIFI_SSID+"'")
-                    .setPositiveButton("Connect to wifi", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
-                        }
-                    })
-                    .setNegativeButton("EXIT", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            finish();
-                        }
-                    })
-                    .show();
-            return;
-        }
-        else if(wifiManager.getConnectionInfo().getBSSID().compareTo(TARGET_WIFI_BSSID) != 0 ){
-            Log.d("hello","im here");
+        if(wifiManager.getConnectionInfo().getBSSID() == null || wifiManager.getConnectionInfo().getBSSID().toString().compareTo(TARGET_WIFI_BSSID) != 0 ){
             new AlertDialog.Builder(this)
                     .setMessage("Please Connect to wifi network named '"+TARGET_WIFI_SSID+"'")
                     .setPositiveButton("Connect to wifi", new DialogInterface.OnClickListener() {
@@ -240,150 +235,6 @@ public final class MainActivity extends AppCompatActivity {
             return;
         }
     }
-
-    /*public void getWifi(final String WIFIBSSID) {
-        final EditText passwordInput = new EditText(this);
-
-        ProgressDialog progressDialog;
-
-        wifiConfiguration.BSSID = WIFIBSSID;
-
-        final LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
-
-//        -------------Memeriksa apakah gps sudah aktif---------
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            new AlertDialog.Builder(this)
-                    .setMessage("GPS is needed to scan wifi networks")
-                    .setCancelable(false)
-                    .setPositiveButton("ENABLE GPS", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            Intent locationIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                            startActivity(locationIntent);
-                        }
-                    })
-                    .setNegativeButton("EXIT", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            finish();
-                        }
-                    })
-                    .show();
-        }
-//        -------------------------------------------------------
-
-        progressDialog = new ProgressDialog(this);
-
-
-        if (wifiManager.isWifiEnabled()) {
-
-            //progressDialog.show(this, "", "Scanning Wifi");
-
-            Log.d("connectioninfo",wifiManager.getConnectionInfo().toString());
-//            Jika user terkoneksi pada wifi lain atau jika user tidak terkoneksi dengan apapun
-            if (wifiManager.getConnectionInfo().getBSSID() == null || wifiManager.getConnectionInfo().getBSSID().toString().compareTo(WIFIBSSID) != 0){
-
-                wifiManager.startScan();
-                scanResult = wifiManager.getScanResults();
-
-                Log.d("ScanResult", String.valueOf(scanResult.size()));
-
-                if (scanResult.size() != 0 || scanResult != null) {
-                    Log.v("SCAN_RESULT", "SCAN RESULT SUCCESSFUL");
-                    for (int i = 0; i < scanResult.size(); i++) {
-
-                        if (scanResult.get(i).BSSID.equals(WIFIBSSID)) {
-
-                            progressDialog.dismiss();
-
-                            Log.v("SCAN_RESULT :", scanResult.get(i).SSID);
-                            String WifiSSID = scanResult.get(i).SSID;
-                            wifiConfiguration.BSSID = WIFIBSSID;
-                            wifiConfiguration.SSID = WifiSSID;
-
-                            final int ENCRYPTION = getSecurity(scanResult.get(i));
-
-//                            Ubah input text menjadi input password
-                            passwordInput.setTransformationMethod(PasswordTransformationMethod.getInstance());
-
-                            new AlertDialog.Builder(this)
-                                    .setMessage("Enter Wifi password for \"" + WifiSSID + "\"")
-                                    .setView(passwordInput)
-                                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int j) {
-                                            String WIFI_PASSWORD = passwordInput.getText().toString();
-                                            switch (ENCRYPTION) {
-                                                case SECURITY_WEP:
-                                                    wifiConfiguration.wepKeys[0] = "\"" + WIFI_PASSWORD + "\"";
-                                                    wifiConfiguration.wepTxKeyIndex = 0;
-                                                    wifiConfiguration.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-                                                    wifiConfiguration.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);
-                                                    break;
-                                                case SECURITY_PSK:
-                                                    wifiConfiguration.preSharedKey = "\"" + WIFI_PASSWORD + "\"";
-                                                    break;
-                                                case SECURITY_NONE:
-                                                    wifiConfiguration.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-                                                    break;
-                                            }
-//                                            Melakukan koneksi ke wifi
-                                            int netId = wifiManager.addNetwork(wifiConfiguration);
-                                            wifiManager.enableNetwork(netId, true);
-                                        }
-                                    })
-                                    .setCancelable(false)
-                                    .show();
-                            progressDialog.dismiss();
-                            break;
-                        }
-
-                        progressDialog.dismiss();
-//                       ------ Jika sudah memeriksa seluruh hasil scanning dan tidak menemukan network yang diinginkan----
-                        if (i == scanResult.size()) {
-                            new AlertDialog.Builder(this)
-                                    .setMessage("We cannot find the office wifi network for the app, the wifi office wifi network is needed for this app to work")
-                                    .setPositiveButton("TRY AGAIN", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int j) {
-                                            getWifi(WIFIBSSID);
-                                        }
-                                    })
-                                    .setNegativeButton("EXIT", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            finish();
-                                        }
-                                    })
-                                    .setCancelable(false)
-                                    .show();
-                        }
-//                        -------------------------------------------------------------------------------------------------
-                    }
-                }
-                else {
-                    new AlertDialog.Builder(this)
-                            .setMessage("Cant detect any wifi network near you, get to better location to get wifi network signal")
-                            .setPositiveButton("Retry", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    getWifi(WIFIBSSID);
-                                }
-                            })
-                            .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    finish();
-                                }
-                            });
-                }
-                if (wifiManager.getConnectionInfo().getBSSID().equals(WIFIBSSID)) {
-                    Log.v("NETWORK", "Network Already Available");
-                }
-            }
-        }
-    }*/
 
     private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
 

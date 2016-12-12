@@ -89,7 +89,7 @@ public class LoginFragment extends Fragment {
         String parameters = "username=" + username + "&password=" + password;
 
         try {
-            url = new URL("http://192.168.1.108/pharosfaces/memberlogin.php"); //URL buat login nya
+            url = new URL("http://192.168.0.3/pharosfaces/memberlogin.php"); //URL buat login nya
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
