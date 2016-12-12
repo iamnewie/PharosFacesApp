@@ -127,28 +127,28 @@ public class LoginFragment extends Fragment {
                 String array[] = response.split(";");
                 userId = array[1];
                 Toast.makeText(getContext(), "Login Success", Toast.LENGTH_SHORT).show();
-
-            } else {
+                //kirim username ke activity
+                if (!username.equals("")) {
+                    ((MainActivity) getActivity()).setUsername(username);
+                    sharedPreferencesEditor.putBoolean("Logout", true);
+                    sharedPreferencesEditor.putBoolean("Camera", false);
+                    sharedPreferencesEditor.putString("UserID", userId);
+                    sharedPreferencesEditor.putString("Username", username);
+                    cameraButton.setEnabled(false);
+                    cameraButton.setClickable(false);
+                    logoutButton.setEnabled(true);
+                    logoutButton.setClickable(true);
+                    logoutButton.setImageResource(R.drawable.icon3_enable);
+                    sharedPreferencesEditor.commit();
+                }
+            }
+            else {
                 // You can perform UI operations here
                 Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
             }
             inputStreamReader.close();
             reader.close();
 
-            //kirim username ke activity
-            if (!username.equals("")) {
-                ((MainActivity) getActivity()).setUsername(username);
-                sharedPreferencesEditor.putBoolean("Logout", true);
-                sharedPreferencesEditor.putBoolean("Camera", false);
-                sharedPreferencesEditor.putString("UserID", userId);
-                sharedPreferencesEditor.putString("Username", username);
-                cameraButton.setEnabled(false);
-                cameraButton.setClickable(false);
-                logoutButton.setEnabled(true);
-                logoutButton.setClickable(true);
-                logoutButton.setImageResource(R.drawable.icon3_enable);
-                sharedPreferencesEditor.commit();
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }

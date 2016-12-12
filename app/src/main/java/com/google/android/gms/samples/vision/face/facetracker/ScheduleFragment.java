@@ -63,7 +63,7 @@ public class ScheduleFragment extends Fragment {
         dateList = new ArrayList<String>();
         if (!username.equals("")) {   //jalanin kalo username ada isinya
             //ambil info
-            getSchedule();
+            //getSchedule();
             TextView nameText = (TextView) getView().findViewById(R.id.name_text);
             TextView staffIdText = (TextView) getView().findViewById(R.id.staffid_text);
             nameText.setText(fullName);
@@ -138,6 +138,7 @@ public class ScheduleFragment extends Fragment {
             // Response from server after login process will be stored in response variable.
             response = stringBuilder.toString();
 
+            Log.d("Response",response);
             String[] splitResponse = response.split(";"); //FORMAT: id;name;image;date;date;date;date;dst
             staffId = splitResponse[0];
             fullName = splitResponse[1];
