@@ -15,10 +15,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,8 +27,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by Home on 12/10/2016.
@@ -39,7 +35,7 @@ public class ScheduleFragment extends Fragment {
     String username = "";
     String fullName = "-";
     String staffId = "-";
-    String image="-";
+    String image = "-";
     ArrayList<String> dateList;
     ImageView imageView;
 
@@ -83,18 +79,9 @@ public class ScheduleFragment extends Fragment {
     @Override
     public void setMenuVisibility(boolean menuVisible) {
         super.setMenuVisibility(menuVisible);
-        if(menuVisible){
+        if (menuVisible) {
             username = ((MainActivity) getActivity()).getUsername();
-            if(username.equals("")){
-                TextView nameText = (TextView) getView().findViewById(R.id.name_text);
-                TextView staffIdText = (TextView) getView().findViewById(R.id.staffid_text);
-                nameText.setText(null);
-                staffIdText.setText(null);
-
-                //masukin ke list view
-                ListView dateView = (ListView) getView().findViewById(R.id.date_view);
-                dateView.setAdapter(null);
-                imageView.setImageBitmap(null);
+            if (username.equals("")) {
 
                 new AlertDialog.Builder(getContext())
                         .setMessage("Login terlebih dahulu untuk dapat melihat profile dan schedule history")
@@ -105,9 +92,7 @@ public class ScheduleFragment extends Fragment {
                             }
                         })
                         .show();
-            }
-            else
-            {
+            } else {
                 //ambil info
                 getSchedule();
                 TextView nameText = (TextView) getView().findViewById(R.id.name_text);
@@ -157,11 +142,11 @@ public class ScheduleFragment extends Fragment {
             staffId = splitResponse[0];
             fullName = splitResponse[1];
             image = splitResponse[2];
-            Log.d("Image",image);
+            Log.d("Image", image);
             for (int i = 3; i < splitResponse.length - 1; i++) {
                 dateList.add(splitResponse[i]);
             }
-            new getImage(imageView,image).execute();
+            new getImage(imageView, image).execute();
 
             // You can perform UI operations here
 
@@ -172,22 +157,23 @@ public class ScheduleFragment extends Fragment {
         }
     }
 
-    class getImage extends AsyncTask<Void,Void,Bitmap>{
+    class getImage extends AsyncTask<Void, Void, Bitmap> {
 
         ImageView imageView;
         String imagename;
-        getImage(ImageView imageView, String imagename){
+
+        getImage(ImageView imageView, String imagename) {
             this.imageView = imageView;
             this.imagename = imagename;
         }
 
         @Override
         protected Bitmap doInBackground(Void... voids) {
-            Bitmap profilepic=null;
+            Bitmap profilepic = null;
             try {
-                URL url = new URL("http://192.168.0.3/pharosfaces/images/"+ imagename);
+                URL url = new URL("http://192.168.0.3/pharosfaces/images/" + imagename);
                 InputStream inputStream = url.openStream();
-                profilepic= BitmapFactory.decodeStream(inputStream);
+                profilepic = BitmapFactory.decodeStream(inputStream);
                 inputStream.close();
 
             } catch (MalformedURLException e) {

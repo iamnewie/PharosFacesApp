@@ -25,36 +25,19 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Camera;
-import android.location.Location;
-import android.location.LocationManager;
-import android.net.ConnectivityManager;
-import android.net.Network;
 import android.net.NetworkInfo;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
-import android.widget.EditText;
-
-import java.util.List;
-import java.util.jar.Manifest;
-
-import static java.security.AccessController.getContext;
 
 
 public final class MainActivity extends AppCompatActivity {
@@ -73,7 +56,7 @@ public final class MainActivity extends AppCompatActivity {
     private static String TARGET_WIFI_BSSID = "00:26:5a:42:de:4e";
     private static String TARGET_WIFI_SSID = "Nelson";
 
-//    Username kalo uda login
+    //    Username kalo uda login
     String username = "";
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -83,8 +66,8 @@ public final class MainActivity extends AppCompatActivity {
         setContentView(R.layout.mainactivity);
 
 //        ---Ambil username dari sharedpreference agar user tetap dapat melihat schedule jika keluar dari apps------
-        sharedPreferences = getSharedPreferences("PHAROS",MODE_PRIVATE);
-        username = sharedPreferences.getString("Username","");
+        sharedPreferences = getSharedPreferences("PHAROS", MODE_PRIVATE);
+        username = sharedPreferences.getString("Username", "");
 //        ---------------------------------------------------------------------------------------------------------
 
 //        ---Deklarasi fragment fragment yang akan di gunakan---
@@ -111,8 +94,8 @@ public final class MainActivity extends AppCompatActivity {
         wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         wifiConfiguration = new WifiConfiguration();
 
-        registerReceiver(new wifiEnabled(wifiManager),intentFilter);
-        registerReceiver(new wifiConnecting(wifiManager),connectionIntentFilter);
+        registerReceiver(new wifiEnabled(wifiManager), intentFilter);
+        registerReceiver(new wifiConnecting(wifiManager), connectionIntentFilter);
 
 //       -------- Deklarasi view pager---------
         viewPager = (ViewPager) findViewById(R.id.fragmentFrame);
@@ -125,13 +108,13 @@ public final class MainActivity extends AppCompatActivity {
     }
 
 
-//    Class sebuah broadcast receiver yang listen adanya perubahan pada state wifi
+    //    Class sebuah broadcast receiver yang listen adanya perubahan pada state wifi
     class wifiEnabled extends BroadcastReceiver {
 
         WifiManager wifiManager;
         ProgressDialog progressDialog;
 
-        wifiEnabled(WifiManager wifiManager){
+        wifiEnabled(WifiManager wifiManager) {
             this.wifiManager = wifiManager;
         }
 
@@ -145,24 +128,24 @@ public final class MainActivity extends AppCompatActivity {
 //              ---------------jika wifi belom di nyalakan-------------
                 case WifiManager.WIFI_STATE_DISABLED: {
 //                      Buat dialog dimana akan meminta user untuk menyalakan wifi
-                        new AlertDialog.Builder(context)
-                                .setMessage("Wifi is needed for this app")
-                                .setPositiveButton("Enable Wifi", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        dialogInterface.dismiss();
-                                        wifiManager.setWifiEnabled(true);
-                                    }
-                                })
+                    new AlertDialog.Builder(context)
+                            .setMessage("Wifi is needed for this app")
+                            .setPositiveButton("Enable Wifi", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    dialogInterface.dismiss();
+                                    wifiManager.setWifiEnabled(true);
+                                }
+                            })
 //                              Jika tidak, keluar dari aplikasi
-                                .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        finish();
-                                    }
-                                })
-                                .setCancelable(false)
-                                .show();
+                            .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    finish();
+                                }
+                            })
+                            .setCancelable(false)
+                            .show();
 //              -------------------------------------------------------
                 }
                 break;
@@ -170,27 +153,26 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
-    class wifiConnecting extends BroadcastReceiver{
+    class wifiConnecting extends BroadcastReceiver {
 
-//        Membuat sebuah semaphore receiver hanya dapat sekali, karena terdapat bug dimana broadcast receiver menerima lebih dari sekali
+        //        Membuat sebuah semaphore receiver hanya dapat sekali, karena terdapat bug dimana broadcast receiver menerima lebih dari sekali
         boolean firstConnect = true;
 
         WifiManager wifiManager;
-        wifiConnecting(WifiManager wifiManager){
+
+        wifiConnecting(WifiManager wifiManager) {
             this.wifiManager = wifiManager;
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
             NetworkInfo networkInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
-            if(networkInfo.isConnected()) {
-                if(firstConnect){
+            if (networkInfo.isConnected()) {
+                if (firstConnect) {
                     Log.v("Wifi listener", "Wifi is Connected to a network");
                     checkWifi(wifiManager);
                     firstConnect = false;
-                }
-                else
-                {
+                } else {
                     firstConnect = true;
                 }
             }
@@ -203,12 +185,12 @@ public final class MainActivity extends AppCompatActivity {
         checkWifi(wifiManager);
     }
 
-    void checkWifi(final WifiManager wifiManager){
-        Log.d("WIFI CHECK",wifiManager.getConnectionInfo().toString());
+    void checkWifi(final WifiManager wifiManager) {
+        Log.d("WIFI CHECK", wifiManager.getConnectionInfo().toString());
 
-        if(wifiManager.getConnectionInfo().getBSSID() == null || wifiManager.getConnectionInfo().getBSSID().toString().compareTo(TARGET_WIFI_BSSID) != 0 ){
+        if (wifiManager.getConnectionInfo().getBSSID() == null || wifiManager.getConnectionInfo().getBSSID().toString().compareTo(TARGET_WIFI_BSSID) != 0) {
             new AlertDialog.Builder(this)
-                    .setMessage("Please Connect to wifi network named '"+TARGET_WIFI_SSID+"'")
+                    .setMessage("Please Connect to wifi network named '" + TARGET_WIFI_SSID + "'")
                     .setPositiveButton("Connect to wifi", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {

@@ -1,19 +1,13 @@
 package com.google.android.gms.samples.vision.face.facetracker;
 
-import android.annotation.TargetApi;
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.media.Image;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +18,6 @@ import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -37,7 +30,7 @@ public class LoginFragment extends Fragment {
 
     String username = "";
     String password = "";
-    String userId   = "";
+    String userId = "";
     ImageButton cameraButton;
     ImageButton logoutButton;
     SharedPreferences sharedPreferences;
@@ -52,10 +45,10 @@ public class LoginFragment extends Fragment {
             StrictMode.setThreadPolicy(policy);
         }
 
-        View cameraFragmentView = inflater.inflate(R.layout.main,null);
+        View cameraFragmentView = inflater.inflate(R.layout.main, null);
 
 
-        sharedPreferences = getContext().getSharedPreferences("PHAROS",Context.MODE_PRIVATE);
+        sharedPreferences = getContext().getSharedPreferences("PHAROS", Context.MODE_PRIVATE);
         sharedPreferencesEditor = sharedPreferences.edit();
 
         return inflater.inflate(R.layout.loginlayout, container, false);
@@ -130,27 +123,26 @@ public class LoginFragment extends Fragment {
             }
             // Response from server after login process will be stored in response variable.
             response = stringBuilder.toString();
-            if(response.contains("success")){
+            if (response.contains("success")) {
                 String array[] = response.split(";");
                 userId = array[1];
                 Toast.makeText(getContext(), "Login Success", Toast.LENGTH_SHORT).show();
 
-            }else
-            {
+            } else {
                 // You can perform UI operations here
                 Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
             }
-                inputStreamReader.close();
-                reader.close();
+            inputStreamReader.close();
+            reader.close();
 
             //kirim username ke activity
-            if (!username.equals("")){
+            if (!username.equals("")) {
 
                 ((MainActivity) getActivity()).setUsername(username);
                 sharedPreferencesEditor.putBoolean("Logout", true);
                 sharedPreferencesEditor.putBoolean("Camera", false);
                 sharedPreferencesEditor.putString("UserID", userId);
-                sharedPreferencesEditor.putString("Username",username);
+                sharedPreferencesEditor.putString("Username", username);
                 cameraButton.setEnabled(false);
                 cameraButton.setClickable(false);
                 logoutButton.setEnabled(true);

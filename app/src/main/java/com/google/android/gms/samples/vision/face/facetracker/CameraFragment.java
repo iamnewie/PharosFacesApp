@@ -1,37 +1,30 @@
 package com.google.android.gms.samples.vision.face.facetracker;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.ConnectivityManager;
-import android.net.wifi.ScanResult;
-import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -49,7 +42,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -97,11 +89,11 @@ public class CameraFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
 //        ----------SHARED PREFERENCES------------------------
-        preferences = getContext().getSharedPreferences("PHAROS",Context.MODE_PRIVATE);
+        preferences = getContext().getSharedPreferences("PHAROS", Context.MODE_PRIVATE);
         preferenceseditor = preferences.edit();
 
-        cameraBtnEnabled = preferences.getBoolean("Camera",true);
-        logoutBtnEnabled = preferences.getBoolean("Logout",false);
+        cameraBtnEnabled = preferences.getBoolean("Camera", true);
+        logoutBtnEnabled = preferences.getBoolean("Logout", false);
 //        -----------------------------------------------------
     }
 
@@ -110,7 +102,7 @@ public class CameraFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
 
-        View view = inflater.inflate(R.layout.main,container,false);
+        View view = inflater.inflate(R.layout.main, container, false);
 
         mPreview = (CameraSourcePreview) view.findViewById(R.id.preview);
         mGraphicOverlay = (GraphicOverlay) view.findViewById(R.id.faceOverlay);
@@ -119,7 +111,7 @@ public class CameraFragment extends Fragment {
         logoutButton = (ImageButton) view.findViewById(R.id.logoutButton);
 
         //kalo belom login
-        if (cameraBtnEnabled && !logoutBtnEnabled){
+        if (cameraBtnEnabled && !logoutBtnEnabled) {
             cameraButton.setEnabled(true);
             cameraButton.setClickable(true);
             logoutButton.setEnabled(false);
@@ -149,7 +141,7 @@ public class CameraFragment extends Fragment {
         return view;
     }
 
-    private void logoutButtonClicks(){
+    private void logoutButtonClicks() {
 
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -157,23 +149,36 @@ public class CameraFragment extends Fragment {
                 ProgressDialog progress = new ProgressDialog(getContext());
                 progress.setMessage("Logging out");
                 progress.show();
-                try{
+                try {
                     Thread thread = new Thread(new sendLogoutThread());  //Buat thread, kirim logout request
                     thread.start();
                     thread.join();
                     progress.dismiss();
                     //Logout sukses
 
-                    preferenceseditor.putBoolean("Logout",false);
-                    preferenceseditor.putBoolean("Camera",true);
-                    preferenceseditor.putString("Username","");
-                    preferenceseditor.putString("UserID","");
+                    preferenceseditor.putBoolean("Logout", false);
+                    preferenceseditor.putBoolean("Camera", true);
+                    preferenceseditor.putString("Username", "");
+                    preferenceseditor.putString("UserID", "");
                     cameraButton.setEnabled(true);
                     cameraButton.setClickable(true);
                     logoutButton.setEnabled(false);
                     logoutButton.setClickable(false);
                     logoutButton.setImageResource(R.drawable.icon3_disabled);
                     preferenceseditor.commit();
+
+//                    -----------Clear schedule pada schedulefragment jika logout------------
+                    TextView nameText = (TextView) getActivity().findViewById(R.id.name_text);
+                    TextView staffIdText = (TextView) getActivity().findViewById(R.id.staffid_text);
+                    nameText.setText(null);
+                    staffIdText.setText(null);
+
+                    ListView dateView = (ListView) getActivity().findViewById(R.id.date_view);
+                    dateView.setAdapter(null);
+
+                    ImageView imageView = (ImageView) getActivity().findViewById(R.id.profile_image);
+                    imageView.setImageBitmap(null);
+//                    -------------------------------------------------
 
                     new AlertDialog.Builder(getContext())
                             .setMessage("Logout Success")
@@ -184,8 +189,7 @@ public class CameraFragment extends Fragment {
                                 }
                             }).show();
 
-                }
-                catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -245,9 +249,9 @@ public class CameraFragment extends Fragment {
             Boolean listenTaskBool = new listenTask(bytes).execute().get();
 
 //            Menunggu hasil dari async task
-            if(listenTaskBool){
+            if (listenTaskBool) {
                 new AlertDialog.Builder(getContext())
-                        .setMessage("Username found. Are you "+ username + " ?")
+                        .setMessage("Username found. Are you " + username + " ?")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -255,14 +259,14 @@ public class CameraFragment extends Fragment {
                                 try {
                                     dialogInterface.dismiss();
                                     Boolean confirmTaskBool = new confirmTask("yes").execute().get();
-                                    if(confirmTaskBool) {
+                                    if (confirmTaskBool) {
                                         socket.close();
 
                                         ((MainActivity) getActivity()).setUsername(username);
                                         preferenceseditor.putBoolean("Logout", true);
                                         preferenceseditor.putBoolean("Camera", false);
                                         preferenceseditor.putString("UserID", userId);
-                                        preferenceseditor.putString("Username",username);
+                                        preferenceseditor.putString("Username", username);
                                         cameraButton.setEnabled(false);
                                         cameraButton.setClickable(false);
                                         logoutButton.setEnabled(true);
@@ -279,7 +283,7 @@ public class CameraFragment extends Fragment {
                                                     }
                                                 }).show();
                                     }
-                                    if(!confirmTaskBool){
+                                    if (!confirmTaskBool) {
                                         new AlertDialog.Builder(getContext())
                                                 .setMessage("Anda Sudah Absen Hari ini")
                                                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -334,34 +338,33 @@ public class CameraFragment extends Fragment {
         }
     }
 
-//    --------Thread yang digunakan saat user hendak logout-----
-    class sendLogoutThread implements Runnable{
+    //    --------Thread yang digunakan saat user hendak logout-----
+    class sendLogoutThread implements Runnable {
         @Override
         public void run() {
-            try{
+            try {
                 InetAddress HOST = InetAddress.getByName(IPNUM);
                 socket = new Socket(HOST, PORT);
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                String data = "LOGOUT;"+ preferences.getString("UserID",null);   //FORMAT: "LOGOUT;userId"
+                String data = "LOGOUT;" + preferences.getString("UserID", null);   //FORMAT: "LOGOUT;userId"
                 ((MainActivity) getActivity()).setUsername("");
                 dataOutputStream.write(data.getBytes());
                 dataOutputStream.flush();
                 socket.close();
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 //    ----------------------------------------------------------
 
-//    -------Async task yang digunakan jika user hendak mengirim face recognition request ke server------
-    class listenTask extends AsyncTask<Void,Void,Boolean> {
+    //    -------Async task yang digunakan jika user hendak mengirim face recognition request ke server------
+    class listenTask extends AsyncTask<Void, Void, Boolean> {
 
         byte[] bytes;
         ProgressDialog progressDialog;
 
-        listenTask(byte[] bytes){
+        listenTask(byte[] bytes) {
             this.bytes = bytes;
         }
 
@@ -389,7 +392,7 @@ public class CameraFragment extends Fragment {
                 byte[] arrayByte = stream.toByteArray();
 
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                String data = "SIZE;" + bitmap.getWidth() + ";" + bitmap.getHeight()+ ";" + arrayByte.length;
+                String data = "SIZE;" + bitmap.getWidth() + ";" + bitmap.getHeight() + ";" + arrayByte.length;
                 dataOutputStream.flush();
                 dataOutputStream.write(data.getBytes());
                 dataOutputStream.flush();
@@ -401,12 +404,12 @@ public class CameraFragment extends Fragment {
 
                 byte inputByte;
 
-                while((inputByte = dataInputStream.readByte())!=0){
-                    readbuffer.append((char)inputByte);
+                while ((inputByte = dataInputStream.readByte()) != 0) {
+                    readbuffer.append((char) inputByte);
                 }
-                Log.d("ACK",readbuffer.toString());
-                if (readbuffer.toString().contains("ACK")){
-                    Log.d("ACK","Received ACK");
+                Log.d("ACK", readbuffer.toString());
+                if (readbuffer.toString().contains("ACK")) {
+                    Log.d("ACK", "Received ACK");
                 }
                 dataOutputStream.flush();
 
@@ -422,11 +425,11 @@ public class CameraFragment extends Fragment {
 
                 byte inputByteLogin;
 
-                while ((inputByteLogin = dataInputStream.readByte()) != 0){
+                while ((inputByteLogin = dataInputStream.readByte()) != 0) {
                     readBufferLogin.append((char) inputByteLogin);
                 }
                 responses = readBufferLogin.toString(); //format terimanya : "id;username"
-                Log.d("responses",responses);
+                Log.d("responses", responses);
 
                 response = responses.split(";");
                 userId = response[0];
@@ -448,13 +451,13 @@ public class CameraFragment extends Fragment {
     }
 //    --------------------------------------------------------------------------------------
 
-    class confirmTask extends AsyncTask<Void,Void,Boolean>{
+    class confirmTask extends AsyncTask<Void, Void, Boolean> {
 
         ProgressDialog progressDialog;
 
         String message;
 
-        confirmTask(String message){
+        confirmTask(String message) {
             this.message = message;
         }
 
@@ -482,9 +485,9 @@ public class CameraFragment extends Fragment {
                 StringBuilder stringBuffer = new StringBuilder();
                 byte inputByte;
 
-                if(message.compareTo("yes") == 0) {
-                    while(true) {
-                        while((inputByte = dataInputStream.readByte())!= 0) {
+                if (message.compareTo("yes") == 0) {
+                    while (true) {
+                        while ((inputByte = dataInputStream.readByte()) != 0) {
                             stringBuffer.append((char) inputByte);
                         }
                         Log.d("StringBuffer", stringBuffer.toString());
