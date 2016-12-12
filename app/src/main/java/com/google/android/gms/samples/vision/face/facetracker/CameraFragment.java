@@ -55,7 +55,6 @@ import java.util.concurrent.ExecutionException;
 /**
  * Created by Home on 12/10/2016.
  */
-@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class CameraFragment extends Fragment {
 
     private static final String TAG = "FaceTracker";
@@ -64,7 +63,6 @@ public class CameraFragment extends Fragment {
     private static final int PORT = 2000;
 
     private static String IPNUM = "192.168.0.3";
-
 
     int faceNumber = 0;
 
@@ -150,6 +148,7 @@ public class CameraFragment extends Fragment {
         return view;
     }
 
+
     private void logoutButtonClicks(){
 
         logoutButton.setOnClickListener(new View.OnClickListener() {
@@ -159,12 +158,16 @@ public class CameraFragment extends Fragment {
                 progress.setMessage("Logging out");
                 progress.show();
                 try{
-                    new Thread (new sendLogoutThread()).start();    //Buat thread, kirim logout request
+                    Thread thread = new Thread(new sendLogoutThread());  //Buat thread, kirim logout request
+                    thread.start();
+                    thread.join();
                     progress.dismiss();
                     //Logout sukses
 
                     preferenceseditor.putBoolean("Logout",false);
                     preferenceseditor.putBoolean("Camera",true);
+                    preferenceseditor.putString("Username","");
+                    preferenceseditor.putString("UserID","");
                     cameraButton.setEnabled(true);
                     cameraButton.setClickable(true);
                     logoutButton.setEnabled(false);
@@ -241,6 +244,7 @@ public class CameraFragment extends Fragment {
         try {
             Boolean listenTaskBool = new listenTask(bytes).execute().get();
 
+//            Menunggu hasil dari async task
             if(listenTaskBool){
                 new AlertDialog.Builder(getContext())
                         .setMessage("Username found. Are you "+ username + " ?")
@@ -254,9 +258,11 @@ public class CameraFragment extends Fragment {
                                     if(confirmTaskBool) {
                                         socket.close();
 
+                                        ((MainActivity) getActivity()).setUsername(username);
                                         preferenceseditor.putBoolean("Logout", true);
                                         preferenceseditor.putBoolean("Camera", false);
                                         preferenceseditor.putString("UserID", userId);
+                                        preferenceseditor.putString("Username",username);
                                         cameraButton.setEnabled(false);
                                         cameraButton.setClickable(false);
                                         logoutButton.setEnabled(true);
@@ -328,6 +334,7 @@ public class CameraFragment extends Fragment {
         }
     }
 
+//    --------Thread yang digunakan saat user hendak logout-----
     class sendLogoutThread implements Runnable{
         @Override
         public void run() {
@@ -336,6 +343,7 @@ public class CameraFragment extends Fragment {
                 socket = new Socket(HOST, PORT);
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
                 String data = "LOGOUT;"+ preferences.getString("UserID",null);   //FORMAT: "LOGOUT;userId"
+                ((MainActivity) getActivity()).setUsername("");
                 dataOutputStream.write(data.getBytes());
                 dataOutputStream.flush();
                 socket.close();
@@ -345,7 +353,9 @@ public class CameraFragment extends Fragment {
             }
         }
     }
+//    ----------------------------------------------------------
 
+//    -------Async task yang digunakan jika user hendak mengirim face recognition request ke server------
     class listenTask extends AsyncTask<Void,Void,Boolean> {
 
         byte[] bytes;
@@ -436,6 +446,7 @@ public class CameraFragment extends Fragment {
             progressDialog.dismiss();
         }
     }
+//    --------------------------------------------------------------------------------------
 
     class confirmTask extends AsyncTask<Void,Void,Boolean>{
 

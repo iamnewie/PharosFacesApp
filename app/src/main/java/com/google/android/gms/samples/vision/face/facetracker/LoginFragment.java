@@ -5,6 +5,8 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -34,6 +37,11 @@ public class LoginFragment extends Fragment {
 
     String username = "";
     String password = "";
+    String userId   = "";
+    ImageButton cameraButton;
+    ImageButton logoutButton;
+    SharedPreferences sharedPreferences;
+    SharedPreferences.Editor sharedPreferencesEditor;
 
     @Nullable
     @Override
@@ -43,6 +51,15 @@ public class LoginFragment extends Fragment {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
+
+        View cameraFragmentView = inflater.inflate(R.layout.main,null);
+
+        cameraButton = (ImageButton) cameraFragmentView.findViewById(R.id.cameraButton);
+        logoutButton = (ImageButton) cameraFragmentView.findViewById(R.id.logoutButton);
+
+        sharedPreferences = getContext().getSharedPreferences("PHAROS",Context.MODE_PRIVATE);
+        sharedPreferencesEditor = sharedPreferences.edit();
+
         return inflater.inflate(R.layout.loginlayout, container, false);
     }
 
@@ -75,7 +92,6 @@ public class LoginFragment extends Fragment {
 
                 //coba login
                 tryLogin(username, password);
-
             }
         });
     }
@@ -109,13 +125,35 @@ public class LoginFragment extends Fragment {
             }
             // Response from server after login process will be stored in response variable.
             response = stringBuilder.toString();
-            // You can perform UI operations here
-            Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
-            inputStreamReader.close();
-            reader.close();
+            if(response.contains("success")){
+                String array[] = response.split(";");
+                userId = array[1];
+                Toast.makeText(getContext(), "Login Success", Toast.LENGTH_SHORT).show();
+
+            }else
+            {
+                // You can perform UI operations here
+                Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
+            }
+                inputStreamReader.close();
+                reader.close();
 
             //kirim username ke activity
-            if (!username.equals("")) ((MainActivity) getActivity()).setUsername(username);
+            if (!username.equals("")){
+
+                ((MainActivity) getActivity()).setUsername(username);
+                sharedPreferencesEditor.putBoolean("Logout", true);
+                sharedPreferencesEditor.putBoolean("Camera", false);
+                sharedPreferencesEditor.putString("UserID", userId);
+                sharedPreferencesEditor.putString("Username",username);
+                cameraButton.setEnabled(false);
+                cameraButton.setClickable(false);
+                logoutButton.setEnabled(true);
+                logoutButton.setClickable(true);
+                logoutButton.setImageResource(R.drawable.icon3_enable);
+                sharedPreferencesEditor.commit();
+
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

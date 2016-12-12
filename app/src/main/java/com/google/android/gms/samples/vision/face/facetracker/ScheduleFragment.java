@@ -1,5 +1,7 @@
 package com.google.android.gms.samples.vision.face.facetracker;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -13,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,7 +51,6 @@ public class ScheduleFragment extends Fragment {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
-
         return inflater.inflate(R.layout.schedulelayout, container, false);
     }
 
@@ -62,7 +64,6 @@ public class ScheduleFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
         dateList = new ArrayList<String>();
 
         if (!username.equals("")) {   //jalanin kalo username ada isinya
@@ -77,6 +78,27 @@ public class ScheduleFragment extends Fragment {
             ListView dateView = (ListView) getView().findViewById(R.id.date_view);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dateList);
             dateView.setAdapter(adapter);
+        }else
+        if(username.equals("")) {
+
+        }
+    }
+
+    @Override
+    public void setMenuVisibility(boolean menuVisible) {
+        super.setMenuVisibility(menuVisible);
+        if(menuVisible){
+            if(username.equals("")){
+                new AlertDialog.Builder(getContext())
+                        .setMessage("Login terlebih dahulu untuk dapat melihat profile dan schedule history")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        })
+                        .show();
+            }
         }
     }
 
@@ -151,7 +173,7 @@ public class ScheduleFragment extends Fragment {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
-            }s
+            }
             return profilepic;
         }
 

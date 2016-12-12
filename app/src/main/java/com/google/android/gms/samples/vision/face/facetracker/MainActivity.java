@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Camera;
 import android.location.Location;
@@ -65,19 +66,26 @@ public final class MainActivity extends AppCompatActivity {
 
     WifiManager wifiManager;
     WifiConfiguration wifiConfiguration;
-    ConnectivityManager connectivityManager;
+
+    SharedPreferences sharedPreferences;
 
     //    Target Wifi BSSID dan SSID
     private static String TARGET_WIFI_BSSID = "00:26:5a:42:de:4e";
     private static String TARGET_WIFI_SSID = "Nelson";
 
+//    Username kalo uda login
+    String username = "";
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mainactivity);
+
+//        ---Ambil username dari sharedpreference agar user tetap dapat melihat schedule jika keluar dari apps------
+        sharedPreferences = getSharedPreferences("PHAROS",MODE_PRIVATE);
+        username = sharedPreferences.getString("Username","");
+//        ---------------------------------------------------------------------------------------------------------
 
 //        ---Deklarasi fragment fragment yang akan di gunakan---
         Fragment CameraFragment = new CameraFragment();
@@ -101,7 +109,6 @@ public final class MainActivity extends AppCompatActivity {
 
 
         wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-//        connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         wifiConfiguration = new WifiConfiguration();
 
         registerReceiver(new wifiEnabled(wifiManager),intentFilter);
@@ -143,6 +150,7 @@ public final class MainActivity extends AppCompatActivity {
                                 .setPositiveButton("Enable Wifi", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
+                                        dialogInterface.dismiss();
                                         wifiManager.setWifiEnabled(true);
                                     }
                                 })
@@ -164,8 +172,9 @@ public final class MainActivity extends AppCompatActivity {
 
     class wifiConnecting extends BroadcastReceiver{
 
-//        Membuat sebuah semaphore receiver hanya dapat sekali
+//        Membuat sebuah semaphore receiver hanya dapat sekali, karena terdapat bug dimana broadcast receiver menerima lebih dari sekali
         boolean firstConnect = true;
+
         WifiManager wifiManager;
         wifiConnecting(WifiManager wifiManager){
             this.wifiManager = wifiManager;
@@ -194,25 +203,6 @@ public final class MainActivity extends AppCompatActivity {
         checkWifi(wifiManager);
     }
 
-    //    class wifiConnecting extends BroadcastReceiver{
-//
-//        ConnectivityManager connectivityManager;
-//        wifiConnecting(ConnectivityManager connectivityManager){
-//            this.connectivityManager = connectivityManager;
-//        }
-//
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-//            if(networkInfo.getType() == ConnectivityManager.TYPE_WIFI){
-//                checkWifi(wifiManager);
-//            }
-//        }
-//    }
-//
-
-
-
     void checkWifi(final WifiManager wifiManager){
         Log.d("WIFI CHECK",wifiManager.getConnectionInfo().toString());
 
@@ -222,6 +212,7 @@ public final class MainActivity extends AppCompatActivity {
                     .setPositiveButton("Connect to wifi", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
+                            dialogInterface.dismiss();
                             startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
                         }
                     })
@@ -268,14 +259,12 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
-    //Username kalo uda login
-    String username = "";
 
     public void setUsername(String username) {
         this.username = username;
     }
 
     public String getUsername() {
-        return username;
+        return this.username;
     }
 }
