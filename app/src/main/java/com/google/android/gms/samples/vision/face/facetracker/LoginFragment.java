@@ -137,7 +137,6 @@ public class LoginFragment extends Fragment {
 
             //kirim username ke activity
             if (!username.equals("")) {
-
                 ((MainActivity) getActivity()).setUsername(username);
                 sharedPreferencesEditor.putBoolean("Logout", true);
                 sharedPreferencesEditor.putBoolean("Camera", false);
@@ -149,7 +148,6 @@ public class LoginFragment extends Fragment {
                 logoutButton.setClickable(true);
                 logoutButton.setImageResource(R.drawable.icon3_enable);
                 sharedPreferencesEditor.commit();
-
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -21,9 +21,9 @@
 		$retval = mysql_query($insertQuery, $connection);
 		
 		if (! $retval){
-			echo("login fail");
+			echo("fail");
 		}
-		else echo("success");
+		else echo("success;$id");
 	} 
 	else {
 		echo "failed";
