@@ -151,8 +151,7 @@ public class ScheduleFragment extends Fragment {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
-            }
-
+            }s
             return profilepic;
         }
 
