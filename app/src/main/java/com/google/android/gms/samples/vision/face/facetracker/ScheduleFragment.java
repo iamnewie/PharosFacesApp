@@ -65,7 +65,6 @@ public class ScheduleFragment extends Fragment {
     public void onResume() {
         super.onResume();
         dateList = new ArrayList<String>();
-
         if (!username.equals("")) {   //jalanin kalo username ada isinya
             //ambil info
             getSchedule();
@@ -78,9 +77,6 @@ public class ScheduleFragment extends Fragment {
             ListView dateView = (ListView) getView().findViewById(R.id.date_view);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dateList);
             dateView.setAdapter(adapter);
-        }else
-        if(username.equals("")) {
-
         }
     }
 
@@ -88,7 +84,18 @@ public class ScheduleFragment extends Fragment {
     public void setMenuVisibility(boolean menuVisible) {
         super.setMenuVisibility(menuVisible);
         if(menuVisible){
+            username = ((MainActivity) getActivity()).getUsername();
             if(username.equals("")){
+                TextView nameText = (TextView) getView().findViewById(R.id.name_text);
+                TextView staffIdText = (TextView) getView().findViewById(R.id.staffid_text);
+                nameText.setText(null);
+                staffIdText.setText(null);
+
+                //masukin ke list view
+                ListView dateView = (ListView) getView().findViewById(R.id.date_view);
+                dateView.setAdapter(null);
+                imageView.setImageBitmap(null);
+
                 new AlertDialog.Builder(getContext())
                         .setMessage("Login terlebih dahulu untuk dapat melihat profile dan schedule history")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -98,6 +105,20 @@ public class ScheduleFragment extends Fragment {
                             }
                         })
                         .show();
+            }
+            else
+            {
+                //ambil info
+                getSchedule();
+                TextView nameText = (TextView) getView().findViewById(R.id.name_text);
+                TextView staffIdText = (TextView) getView().findViewById(R.id.staffid_text);
+                nameText.setText(fullName);
+                staffIdText.setText(staffId);
+
+                //masukin ke list view
+                ListView dateView = (ListView) getView().findViewById(R.id.date_view);
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dateList);
+                dateView.setAdapter(adapter);
             }
         }
     }

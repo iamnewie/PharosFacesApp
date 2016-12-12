@@ -54,13 +54,19 @@ public class LoginFragment extends Fragment {
 
         View cameraFragmentView = inflater.inflate(R.layout.main,null);
 
-        cameraButton = (ImageButton) cameraFragmentView.findViewById(R.id.cameraButton);
-        logoutButton = (ImageButton) cameraFragmentView.findViewById(R.id.logoutButton);
 
         sharedPreferences = getContext().getSharedPreferences("PHAROS",Context.MODE_PRIVATE);
         sharedPreferencesEditor = sharedPreferences.edit();
 
         return inflater.inflate(R.layout.loginlayout, container, false);
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        cameraButton = (ImageButton) getActivity().findViewById(R.id.cameraButton);
+        logoutButton = (ImageButton) getActivity().findViewById(R.id.logoutButton);
     }
 
     public void setMenuVisibility(boolean menuVisible) {
@@ -80,7 +86,6 @@ public class LoginFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
         final EditText usernameEdit = (EditText) getView().findViewById(R.id.username_edit);
         final EditText passwordEdit = (EditText) getView().findViewById(R.id.password_edit);
         Button loginButton = (Button) getView().findViewById(R.id.login_button);

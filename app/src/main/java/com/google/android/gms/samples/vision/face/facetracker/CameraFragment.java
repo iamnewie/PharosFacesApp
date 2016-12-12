@@ -80,8 +80,8 @@ public class CameraFragment extends Fragment {
     // permission request codes need to be < 256
     private static final int RC_HANDLE_CAMERA_PERM = 2;
 
-    private ImageButton cameraButton;
-    private ImageButton logoutButton;
+    public ImageButton cameraButton;
+    public ImageButton logoutButton;
 
     String username = null;
     String userId = null;
@@ -109,6 +109,7 @@ public class CameraFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
+
         View view = inflater.inflate(R.layout.main,container,false);
 
         mPreview = (CameraSourcePreview) view.findViewById(R.id.preview);
@@ -147,7 +148,6 @@ public class CameraFragment extends Fragment {
         cameraButtonClicks();
         return view;
     }
-
 
     private void logoutButtonClicks(){
 
