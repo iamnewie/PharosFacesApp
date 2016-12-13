@@ -21,6 +21,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -86,6 +87,8 @@ public class CameraFragment extends Fragment {
     boolean cameraBtnEnabled;
     boolean logoutBtnEnabled;
 
+    Button loginButton;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -143,6 +146,10 @@ public class CameraFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+    }
 
     //    OnClick listener saat logoutbutton di click
     private void logoutButtonClicks() {
@@ -194,6 +201,9 @@ public class CameraFragment extends Fragment {
                             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
+
+                                    loginButton = (Button) getActivity().findViewById(R.id.login_button);
+                                    loginButton.setEnabled(true);
                                     dialogInterface.dismiss();
                                 }
                             }).show();
@@ -286,6 +296,8 @@ public class CameraFragment extends Fragment {
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
+                                loginButton = (Button) getActivity().findViewById(R.id.login_button);
+                                loginButton.setEnabled(false);
                                 dialogInterface.dismiss();
                             }
                         }).show();
@@ -295,7 +307,7 @@ public class CameraFragment extends Fragment {
 //            Jika gagal maka akan mengeluarkan dialog bahwa user sudah login hari ini
             if (!confirmTaskBool) {
                 new AlertDialog.Builder(getContext())
-                        .setMessage("Anda Sudah Absen Hari ini")
+                        .setMessage("You have logged in today")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {

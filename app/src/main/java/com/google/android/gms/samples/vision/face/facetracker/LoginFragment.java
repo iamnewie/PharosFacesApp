@@ -8,13 +8,13 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,20 +33,18 @@ public class LoginFragment extends Fragment {
     String userId = "";
     ImageButton cameraButton;
     ImageButton logoutButton;
+    Button loginButton;
     SharedPreferences sharedPreferences;
     SharedPreferences.Editor sharedPreferencesEditor;
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        //super.onCreateView(inflater, container, savedInstanceState);
+        super.onCreateView(inflater, container, savedInstanceState);
         if (android.os.Build.VERSION.SDK_INT > 9) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
-
-        View cameraFragmentView = inflater.inflate(R.layout.main, null);
-
 
         sharedPreferences = getContext().getSharedPreferences("PHAROS", Context.MODE_PRIVATE);
         sharedPreferencesEditor = sharedPreferences.edit();
@@ -67,7 +65,7 @@ public class LoginFragment extends Fragment {
         super.setMenuVisibility(menuVisible);
         if (menuVisible) {
             new AlertDialog.Builder(getContext())
-                    .setMessage("Only use manual login in case you can't login via face recognition.")
+                    .setMessage("Use manual login in case you can't login via face recognition.")
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
@@ -82,7 +80,7 @@ public class LoginFragment extends Fragment {
         super.onStart();
         final EditText usernameEdit = (EditText) getView().findViewById(R.id.username_edit);
         final EditText passwordEdit = (EditText) getView().findViewById(R.id.password_edit);
-        Button loginButton = (Button) getView().findViewById(R.id.login_button);
+        loginButton = (Button) getView().findViewById(R.id.login_button);
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -132,7 +130,6 @@ public class LoginFragment extends Fragment {
                 userId = array[1];
 
                 //Tampilkan login success
-                //Toast.makeText(getContext(), "Login Success", Toast.LENGTH_SHORT).show();
                 new AlertDialog.Builder(getContext())
                         .setMessage("Login success")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -146,6 +143,7 @@ public class LoginFragment extends Fragment {
                     //kirim username ke MainActivity
                     ((MainActivity) getActivity()).setUsername(username);
 
+                    loginButton.setEnabled(false);
                     //Atur sharedprefereces
                     sharedPreferencesEditor.putBoolean("Logout", true);
                     sharedPreferencesEditor.putBoolean("Camera", false);
@@ -161,7 +159,6 @@ public class LoginFragment extends Fragment {
             }
             else if(response.contains("fail")){
                 //Tampilkan login fail
-                //Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
                 new AlertDialog.Builder(getContext())
                         .setMessage("Login failed")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -174,7 +171,7 @@ public class LoginFragment extends Fragment {
             else {
                 //Kalo sudah login hari ini
                 new AlertDialog.Builder(getContext())
-                        .setMessage("You have logged in today.")
+                        .setMessage("You have logged in today")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {

@@ -84,7 +84,7 @@ public class ScheduleFragment extends Fragment {
             if (username.equals("")) {
                 //Alert kalo belum login
                 new AlertDialog.Builder(getContext())
-                        .setMessage("Login terlebih dahulu untuk dapat melihat profile dan schedule history")
+                        .setMessage("Login first to view profile dan schedule history")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
