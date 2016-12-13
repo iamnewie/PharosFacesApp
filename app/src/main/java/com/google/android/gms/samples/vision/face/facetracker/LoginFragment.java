@@ -62,6 +62,7 @@ public class LoginFragment extends Fragment {
         logoutButton = (ImageButton) getActivity().findViewById(R.id.logoutButton);
     }
 
+//    Muncul saat user pindah ke LoginFragment
     public void setMenuVisibility(boolean menuVisible) {
         super.setMenuVisibility(menuVisible);
         if (menuVisible) {
@@ -114,14 +115,17 @@ public class LoginFragment extends Fragment {
             request.write(parameters);
             request.flush();
             request.close();
-            String line = "";
+
+            // Menerima respon dari server
+            String line;
             InputStreamReader inputStreamReader = new InputStreamReader(connection.getInputStream());
             BufferedReader reader = new BufferedReader(inputStreamReader);
             StringBuilder stringBuilder = new StringBuilder();
             while ((line = reader.readLine()) != null) {
                 stringBuilder.append(line);
             }
-            // Response from server after login process will be stored in response variable.
+
+            // Memproses response dari server
             response = stringBuilder.toString();
             if (response.contains("success")) {
                 String array[] = response.split(";");
@@ -129,7 +133,10 @@ public class LoginFragment extends Fragment {
                 Toast.makeText(getContext(), "Login Success", Toast.LENGTH_SHORT).show();
                 //kirim username ke activity
                 if (!username.equals("")) {
+                    //kirim username ke MainActivity
                     ((MainActivity) getActivity()).setUsername(username);
+
+                    //Atur sharedprefereces
                     sharedPreferencesEditor.putBoolean("Logout", true);
                     sharedPreferencesEditor.putBoolean("Camera", false);
                     sharedPreferencesEditor.putString("UserID", userId);
@@ -143,7 +150,7 @@ public class LoginFragment extends Fragment {
                 }
             }
             else {
-                // You can perform UI operations here
+                //Tampilkan login success / fail
                 Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
             }
             inputStreamReader.close();

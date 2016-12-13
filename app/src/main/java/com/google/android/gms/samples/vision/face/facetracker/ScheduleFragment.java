@@ -42,7 +42,6 @@ public class ScheduleFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        //super.onCreateView(inflater, container, savedInstanceState);
         if (android.os.Build.VERSION.SDK_INT > 9) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
@@ -62,8 +61,8 @@ public class ScheduleFragment extends Fragment {
         super.onResume();
         dateList = new ArrayList<String>();
         if (!username.equals("")) {   //jalanin kalo username ada isinya
-            //ambil info
-            //getSchedule();
+
+            //set fullname dan staffid ke textview
             TextView nameText = (TextView) getView().findViewById(R.id.name_text);
             TextView staffIdText = (TextView) getView().findViewById(R.id.staffid_text);
             nameText.setText(fullName);
@@ -80,9 +79,10 @@ public class ScheduleFragment extends Fragment {
     public void setMenuVisibility(boolean menuVisible) {
         super.setMenuVisibility(menuVisible);
         if (menuVisible) {
+            //ambil username dari MainActivity
             username = ((MainActivity) getActivity()).getUsername();
             if (username.equals("")) {
-
+                //Alert kalo belum login
                 new AlertDialog.Builder(getContext())
                         .setMessage("Login terlebih dahulu untuk dapat melihat profile dan schedule history")
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -95,12 +95,14 @@ public class ScheduleFragment extends Fragment {
             } else {
                 //ambil info
                 getSchedule();
+
+                //masukin full name dan staff id ke textview
                 TextView nameText = (TextView) getView().findViewById(R.id.name_text);
                 TextView staffIdText = (TextView) getView().findViewById(R.id.staffid_text);
                 nameText.setText(fullName);
                 staffIdText.setText(staffId);
 
-                //masukin ke list view
+                //masukin tanggal absen ke list view
                 ListView dateView = (ListView) getView().findViewById(R.id.date_view);
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dateList);
                 dateView.setAdapter(adapter);
@@ -117,7 +119,7 @@ public class ScheduleFragment extends Fragment {
         String parameters = "username=" + username;
 
         try {
-            url = new URL("http://192.168.0.3/pharosfaces/getschedule.php"); //URL buat login nya
+            url = new URL("http://192.168.0.3/pharosfaces/getschedule.php"); //URL buat ambil info nya
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
@@ -128,6 +130,8 @@ public class ScheduleFragment extends Fragment {
             request.write(parameters);
             request.flush();
             request.close();
+
+            //menerima respon server
             String line = "";
             InputStreamReader inputStreamReader = new InputStreamReader(connection.getInputStream());
             BufferedReader reader = new BufferedReader(inputStreamReader);
@@ -135,7 +139,8 @@ public class ScheduleFragment extends Fragment {
             while ((line = reader.readLine()) != null) {
                 stringBuilder.append(line);
             }
-            // Response from server after login process will be stored in response variable.
+
+            //mengolah respon server
             response = stringBuilder.toString();
 
             Log.d("Response",response);
@@ -158,6 +163,7 @@ public class ScheduleFragment extends Fragment {
         }
     }
 
+//    ambil image secara asynctask
     class getImage extends AsyncTask<Void, Void, Bitmap> {
 
         ImageView imageView;
