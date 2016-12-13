@@ -42,7 +42,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Created by Home on 12/10/2016.
@@ -51,16 +50,15 @@ public class CameraFragment extends Fragment {
 
     private static final String TAG = "FaceTracker";
 
-
+    //    Port number dan ipaddress/domain name server
     private static final int PORT = 2000;
-
     private static String IPNUM = "192.168.0.3";
+//    --------------------------------------------
 
+    //    Jumlah default face count yang terdeteksi
     int faceNumber = 0;
-
+    //    --------------------------------------------
     private CameraSource mCameraSource = null;
-    private float FrontFaceFPS = 15.0f;
-    private float BackFaceFPS = 25.0f;
 
     private GraphicOverlay mOverlay;
     private FaceGraphic mFaceGraphic;
@@ -69,14 +67,18 @@ public class CameraFragment extends Fragment {
     private GraphicOverlay mGraphicOverlay;
 
     private static final int RC_HANDLE_GMS = 9001;
-    // permission request codes need to be < 256
     private static final int RC_HANDLE_CAMERA_PERM = 2;
 
+    //    Camera shutter button dan logout button
     public ImageButton cameraButton;
     public ImageButton logoutButton;
+//    --------------------------------------
 
+    //    Default value username dan userid
     String username = null;
     String userId = null;
+//    ------------------------------------
+
     Socket socket;
 
     SharedPreferences preferences;
@@ -110,52 +112,57 @@ public class CameraFragment extends Fragment {
         cameraButton = (ImageButton) view.findViewById(R.id.cameraButton);
         logoutButton = (ImageButton) view.findViewById(R.id.logoutButton);
 
-        //kalo belom login
+//        Memeriksa state button berdasarkan dari sharedpreference
+//        agar apps dapat mengingat state button saat keluar dari apps
         if (cameraBtnEnabled && !logoutBtnEnabled) {
             cameraButton.setEnabled(true);
             cameraButton.setClickable(true);
             logoutButton.setEnabled(false);
             logoutButton.setClickable(false);
             logoutButton.setImageResource(R.drawable.icon3_disabled);
-        }
-        //kalo blom logout
-        else {
+        } else {
             cameraButton.setEnabled(false);
             cameraButton.setClickable(false);
             logoutButton.setEnabled(true);
             logoutButton.setClickable(true);
             logoutButton.setImageResource(R.drawable.icon3_enable);
         }
+//        ------------------------------------------------------------
 
-        // Check for the camera permission before accessing the camera.  If the
-        // permission is not granted yet, request permission.
+//        Mengecek permission camera jika belom
+//        di beri permission akan meminta user untuk
+//        memberi permission
         int rc = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA);
         if (rc == PackageManager.PERMISSION_GRANTED) {
             createCameraSource();
         } else {
             requestCameraPermission();
         }
-
         logoutButtonClicks();
         cameraButtonClicks();
         return view;
     }
 
+
+    //    OnClick listener saat logoutbutton di click
     private void logoutButtonClicks() {
 
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+//                Membuat sebuah progress dialog yang melakukan proses logut
                 ProgressDialog progress = new ProgressDialog(getContext());
                 progress.setMessage("Logging out");
                 progress.show();
                 try {
-                    Thread thread = new Thread(new sendLogoutThread());  //Buat thread, kirim logout request
+//                    Membuat thread yang mengirim logout request
+                    Thread thread = new Thread(new sendLogoutThread());
                     thread.start();
                     thread.join();
                     progress.dismiss();
-                    //Logout sukses
 
+//                    Mengubah state camera shutter button menjadi enabled
+//                    dan state logout button menjadi disabled
                     preferenceseditor.putBoolean("Logout", false);
                     preferenceseditor.putBoolean("Camera", true);
                     preferenceseditor.putString("Username", "");
@@ -166,6 +173,7 @@ public class CameraFragment extends Fragment {
                     logoutButton.setClickable(false);
                     logoutButton.setImageResource(R.drawable.icon3_disabled);
                     preferenceseditor.commit();
+//                    ---------------------------------------------------------------------
 
 //                    -----------Clear schedule pada schedulefragment jika logout------------
                     TextView nameText = (TextView) getActivity().findViewById(R.id.name_text);
@@ -178,8 +186,9 @@ public class CameraFragment extends Fragment {
 
                     ImageView imageView = (ImageView) getActivity().findViewById(R.id.profile_image);
                     imageView.setImageBitmap(null);
-//                    -------------------------------------------------
+//                    -----------------------------------------------------------------
 
+//                    Alert dialog yang menyatakan bahwa proses logout telah sukses
                     new AlertDialog.Builder(getContext())
                             .setMessage("Logout Success")
                             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -196,6 +205,7 @@ public class CameraFragment extends Fragment {
         });
     }
 
+    //    OnClick listener saat camera shutter button di click
     private void cameraButtonClicks() {
         cameraButton.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -214,25 +224,31 @@ public class CameraFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 Log.v("FaceNum", String.valueOf(faceNumber).toString());
+//                Jika tidak ada wajah yang terdeteksi maka
+//                proses check in absensi tidak dapat di lakukan
                 if (faceNumber == 0) {
                     new AlertDialog.Builder(getContext())
                             .setTitle("Error")
                             .setMessage("No face detected")
                             .setCancelable(true)
                             .show();
+//                    Jika lebih dari 1 wajah yang terdeteksi maka
+//                    proses check in absensi tidak dapat di lakukan
                 } else if (faceNumber > 1) {
                     new AlertDialog.Builder(getContext())
                             .setTitle("Error")
                             .setMessage("More than one face is detected")
                             .setCancelable(true)
                             .show();
+//                    Proses check in absensi dapat dilakukan
+//                    jika hanya 1 wajah yang terdeteksi
                 } else if (faceNumber == 1) {
                     mCameraSource.takePicture(null, new CameraSource.PictureCallback() {
                         @Override
                         public void onPictureTaken(byte[] bytes) {
                             try {
-                                new listenTask(bytes).execute();
-//                                capturePic(bytes);
+//                                Eksekusi sebuah async task yang melakukan proses login
+                                new loginTask(bytes).execute();
                             } catch (Exception e) {
                                 Log.d(TAG, "FACE NOT FOUND");
                             }
@@ -243,12 +259,16 @@ public class CameraFragment extends Fragment {
         });
     }
 
+    //    Fungsi yang menampilkan dialog dialog yang diperlukan saat melakukan proses konfirmasi bahwa
+    //    user hanya login sekali hari ini
     private void confirmTaskDialog(Boolean confirmTaskBool) {
 
         try {
+//            Jika user sudah login hari ini maka proses login berakhir secara sukses
             if (confirmTaskBool) {
                 socket.close();
-
+//                Set variable username global menjadi username user yang
+//                telah melakukan proses login
                 ((MainActivity) getActivity()).setUsername(username);
                 preferenceseditor.putBoolean("Logout", true);
                 preferenceseditor.putBoolean("Camera", false);
@@ -270,6 +290,9 @@ public class CameraFragment extends Fragment {
                             }
                         }).show();
             }
+//            ----------------------------------------------------------------------
+
+//            Jika gagal maka akan mengeluarkan dialog bahwa user sudah login hari ini
             if (!confirmTaskBool) {
                 new AlertDialog.Builder(getContext())
                         .setMessage("Anda Sudah Absen Hari ini")
@@ -280,25 +303,34 @@ public class CameraFragment extends Fragment {
                             }
                         }).show();
             }
+//            ----------------------------------------------------------------------
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void listenTaskDialog() {
+    //    Fungsi yang menampilkan dialog dialog yang diperlukan saat melakukan proses login
+    private void loginTaskDialog() {
         new AlertDialog.Builder(getContext())
+//                Memberikan prompt pada user bahwa apakah benar identitas yang
+//                terdeteksi adalah user yang melakukan login
                 .setMessage("Username found. Are you " + username + " ?")
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         dialogInterface.dismiss();
+//                        Lakukan proses konfirmasi bahwa user hanya login sekali
+//                        hari ini
                         new confirmTask("yes").execute();
                     }
                 })
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-
+//                        Jika identitas yang terdeteksi bukanlah user
+//                        maka socket akan di tutup dan mereset ulang
+//                        proses pada server untuk dapat melakukan
+//                        pengidentifikasian ulang
                         try {
                             dialogInterface.dismiss();
                             socket.close();
@@ -317,112 +349,22 @@ public class CameraFragment extends Fragment {
                         }
                     }
                 }).show();
+
     }
+    //    -------------------------------------------------------------------------------
 
-    private void capturePic(byte[] bytes) {
-
-        try {
-            Boolean listenTaskBool = new listenTask(bytes).execute().get();
-
-//            Menunggu hasil dari async task
-            if (listenTaskBool) {
-                new AlertDialog.Builder(getContext())
-                        .setMessage("Username found. Are you " + username + " ?")
-                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-
-                                try {
-                                    dialogInterface.dismiss();
-                                    Boolean confirmTaskBool = new confirmTask("yes").execute().get();
-                                    if (confirmTaskBool) {
-                                        socket.close();
-
-                                        ((MainActivity) getActivity()).setUsername(username);
-                                        preferenceseditor.putBoolean("Logout", true);
-                                        preferenceseditor.putBoolean("Camera", false);
-                                        preferenceseditor.putString("UserID", userId);
-                                        preferenceseditor.putString("Username", username);
-                                        cameraButton.setEnabled(false);
-                                        cameraButton.setClickable(false);
-                                        logoutButton.setEnabled(true);
-                                        logoutButton.setClickable(true);
-                                        logoutButton.setImageResource(R.drawable.icon3_enable);
-                                        preferenceseditor.commit();
-
-                                        new AlertDialog.Builder(getContext())
-                                                .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
-                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                                        dialogInterface.dismiss();
-                                                    }
-                                                }).show();
-                                    }
-                                    if (!confirmTaskBool) {
-                                        new AlertDialog.Builder(getContext())
-                                                .setMessage("Anda Sudah Absen Hari ini")
-                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                                        dialogInterface.dismiss();
-                                                    }
-                                                }).show();
-                                    }
-
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                } catch (ExecutionException e) {
-                                    e.printStackTrace();
-                                }
-                                dialogInterface.dismiss();
-                            }
-                        })
-                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-
-                                try {
-                                    dialogInterface.dismiss();
-                                    Boolean confirmTaskBool = new confirmTask("no").execute().get();
-                                    socket.close();
-
-                                    new AlertDialog.Builder(getContext())
-                                            .setMessage("Please take your self picture again!")
-                                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                    dialogInterface.dismiss();
-                                                }
-                                            }).show();
-
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                } catch (ExecutionException e) {
-                                    e.printStackTrace();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }).show();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    //    --------Thread yang digunakan saat user hendak logout-----
+    //    Thread yang digunakan saat user hendak logout
     class sendLogoutThread implements Runnable {
         @Override
         public void run() {
             try {
+//                Buka socket baru untuk mengirim logout
                 InetAddress HOST = InetAddress.getByName(IPNUM);
                 socket = new Socket(HOST, PORT);
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
                 String data = "LOGOUT;" + preferences.getString("UserID", null);   //FORMAT: "LOGOUT;userId"
+//                Ubah variable global username menjadi kosong untuk mengkosongkan data schedule pada
+//                schedule fragment
                 ((MainActivity) getActivity()).setUsername("");
                 dataOutputStream.write(data.getBytes());
                 dataOutputStream.flush();
@@ -434,13 +376,15 @@ public class CameraFragment extends Fragment {
     }
 //    ----------------------------------------------------------
 
-    //    -------Async task yang digunakan jika user hendak mengirim face recognition request ke server------
-    class listenTask extends AsyncTask<Void, Void, Boolean> {
+    //    Async task yang digunakan jika user hendak mengirim face recognition request ke server
+    class loginTask extends AsyncTask<Void, Void, Void> {
 
         byte[] bytes;
         ProgressDialog progressDialog;
 
-        listenTask(byte[] bytes) {
+        //        Mendapat input parameter "byte" yaitu gambar yang didapatkan
+//        yang telah diubah menjadi bentuk byte array
+        loginTask(byte[] bytes) {
             this.bytes = bytes;
         }
 
@@ -454,30 +398,35 @@ public class CameraFragment extends Fragment {
         }
 
         @Override
-        protected Boolean doInBackground(Void... voids) {
+        protected Void doInBackground(Void... voids) {
             try {
+//                Membuka socket ke server
                 socket = new Socket(IPNUM, PORT);
 
+//                Mendecode byte array menjadi bitmap untuk dihitung
+//                Lebar dan tinggi gambarnya
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 Log.d("HEIGHT WIDTH", bitmap.getHeight() + " " + bitmap.getWidth());
 
-                //Convert to jpeg format
+//                ubah menjadi jpeg format
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                 byte[] arrayByte = stream.toByteArray();
 
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+//                Mengirim tinggi, lebar dan size file gambar kepada server agar server dapat mengalokasikan
+//                memory untuk dapat menerima gambar dan membuat kembali gambarnya di server dengan
+//                tinggi dan lebar yang benar
                 String data = "SIZE;" + bitmap.getWidth() + ";" + bitmap.getHeight() + ";" + arrayByte.length;
                 dataOutputStream.flush();
                 dataOutputStream.write(data.getBytes());
                 dataOutputStream.flush();
 
-                // menunggu response ack
+//                 menunggu response ack dari server yang menandakan bahwa server
+//                telah mengalokasikan memory untuk mendapatkan stream gambar
                 DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-
                 StringBuilder readbuffer = new StringBuilder();
-
                 byte inputByte;
 
                 while ((inputByte = dataInputStream.readByte()) != 0) {
@@ -487,14 +436,15 @@ public class CameraFragment extends Fragment {
                 if (readbuffer.toString().contains("ACK")) {
                     Log.d("ACK", "Received ACK");
                 }
+//                -------------------------------------------------------------------------
                 dataOutputStream.flush();
 
-                //Kirim gambar
+//                Kirim stream gambar dalam bentuk array byte ke server
                 dataOutputStream.write(arrayByte);
                 dataOutputStream.flush();
+//                ----------------------------------
 
-                //Listen response login
-
+//                Listen response login
                 StringBuilder readBufferLogin = new StringBuilder();
                 String responses;
                 String[] response;
@@ -510,28 +460,31 @@ public class CameraFragment extends Fragment {
                 response = responses.split(";");
                 userId = response[0];
                 username = response[1];
+//                --------------------------------------------------
 
                 dataOutputStream.flush();
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            return true;
+            return null;
         }
 
         @Override
-        protected void onPostExecute(Boolean aBoolean) {
-            super.onPostExecute(aBoolean);
+        protected void onPostExecute(Void voids) {
+            super.onPostExecute(voids);
             progressDialog.dismiss();
-            listenTaskDialog();
+//            Buat sebuah dialog setelah proses login selesai
+            loginTaskDialog();
         }
     }
 //    --------------------------------------------------------------------------------------
 
+    //    Proses pengiriman konfirmasi bahwa proses identifikasi benar
+//    dan memastikan bahwa user hanya dapat check in absensi sekali sehari
     class confirmTask extends AsyncTask<Void, Void, Boolean> {
 
         ProgressDialog progressDialog;
-
         String message;
 
         confirmTask(String message) {
@@ -556,27 +509,30 @@ public class CameraFragment extends Fragment {
 
                 Log.d("Message", message);
                 dataOutputStream.flush();
+//                Mengirim message "yes" ke server yang mengindikasikan bahwa
+//                hasil pengidentifikasian benar
                 dataOutputStream.write(message.getBytes());
                 dataOutputStream.flush();
 
                 StringBuilder stringBuffer = new StringBuilder();
                 byte inputByte;
-
-                if (message.compareTo("yes") == 0) {
-                    while (true) {
-                        while ((inputByte = dataInputStream.readByte()) != 0) {
-                            stringBuffer.append((char) inputByte);
-                        }
-                        Log.d("StringBuffer", stringBuffer.toString());
-                        if (stringBuffer.toString().contains("SUCCESS")) {
-                            Log.d("SUCCESS", "Received SUCCESS");
-                            dataInputStream.close();
-                            return true;
-                        } else if (stringBuffer.toString().contains("FAIL")) {
-                            Log.d("FAIL", "Received FAIL");
-                            dataInputStream.close();
-                            return false;
-                        }
+//                Listen response dari server
+                while (true) {
+                    while ((inputByte = dataInputStream.readByte()) != 0) {
+                        stringBuffer.append((char) inputByte);
+                    }
+                    Log.d("StringBuffer", stringBuffer.toString());
+//                    response SUCCESS mengindikasikan bahwa user telah melakukan proses check in
+                    if (stringBuffer.toString().contains("SUCCESS")) {
+                        Log.d("SUCCESS", "Received SUCCESS");
+                        dataInputStream.close();
+                        return true;
+//                       response FAIL mengindikasikan bahwa user telah melakukan
+//                        proses check in hari ini dan tidak dapat melakukannya lagi
+                    } else if (stringBuffer.toString().contains("FAIL")) {
+                        Log.d("FAIL", "Received FAIL");
+                        dataInputStream.close();
+                        return false;
                     }
                 }
 
@@ -593,8 +549,9 @@ public class CameraFragment extends Fragment {
             confirmTaskDialog(bool);
         }
     }
+//    -----------------------------------------------------------------
 
-
+    //    Meminta request permission camera
     private void requestCameraPermission() {
         Log.w(TAG, "Camera permission is not granted. Requesting permission");
 
@@ -605,7 +562,6 @@ public class CameraFragment extends Fragment {
             ActivityCompat.requestPermissions(getActivity(), permissions, RC_HANDLE_CAMERA_PERM);
             return;
         }
-
 
         View.OnClickListener listener = new View.OnClickListener() {
             @Override
@@ -621,6 +577,8 @@ public class CameraFragment extends Fragment {
                 .show();
     }
 
+    //    Proses instansiasi untuk semua proses camera dan
+//    Face detection
     private void createCameraSource() {
 
         Context context = getContext();
@@ -632,15 +590,8 @@ public class CameraFragment extends Fragment {
                 new MultiProcessor.Builder<>(new GraphicFaceTrackerFactory())
                         .build());
 
+//        Mengecek apakah dependency terinstall
         if (!detector.isOperational()) {
-            // Note: The first time that an app using face API is installed on a device, GMS will
-            // download a native library to the device in order to do detection.  Usually this
-            // completes before the app is run for the first time.  But if that download has not yet
-            // completed, then the above call will not detect any faces.
-            //
-            // isOperational() can be used to check if the required native library is currently
-            // available.  The detector will automatically become operational once the library
-            // download completes on device.
             Log.w(TAG, "Face detector dependencies are not yet available.");
         }
 
@@ -654,19 +605,21 @@ public class CameraFragment extends Fragment {
     }
 
 
+    //    Jika user membuka kembali appsnya maka camera akan dinyalakan
     @Override
     public void onResume() {
         super.onResume();
         startCameraSource();
     }
 
+    //    Jika user mempause apps/ menutupnya preview camera akan di stop
     @Override
     public void onPause() {
         super.onPause();
         mPreview.stop();
-        //progressDialog.dismiss();
     }
 
+    //    Jika apps di kill maka object camera preview akan di release
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -708,7 +661,6 @@ public class CameraFragment extends Fragment {
 
     private void startCameraSource() {
 
-        // check that the device has play services available.
         int code = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(
                 getContext());
         if (code != ConnectionResult.SUCCESS) {
@@ -729,6 +681,7 @@ public class CameraFragment extends Fragment {
         }
     }
 
+    //    Class yang membuat overlay graphic setiap wajah terdeteksi
     private class GraphicFaceTrackerFactory implements MultiProcessor.Factory<Face> {
         @Override
         public Tracker<Face> create(Face face) {
@@ -743,40 +696,31 @@ public class CameraFragment extends Fragment {
             mFaceGraphic = new FaceGraphic(overlay);
         }
 
-        /**
-         * Start tracking the detected face instance within the face overlay.
-         */
+        //        proses yang dilakukan jika sebuah wajah telah terdeteksi
         @Override
         public void onNewItem(int faceId, Face item) {
+//           menambah count pendeteksian wajah
             faceNumber++;
             mFaceGraphic.setId(faceId);
         }
 
-        /**
-         * Update the position/characteristics of the face within the overlay.
-         */
+        //        Mengupdate posisi graphic overlay jika wajah berpindah posisi
         @Override
         public void onUpdate(FaceDetector.Detections<Face> detectionResults, Face face) {
             mOverlay.add(mFaceGraphic);
             mFaceGraphic.updateFace(face);
         }
 
-        /**
-         * Hide the graphic when the corresponding face was not detected.  This can happen for
-         * intermediate frames temporarily (e.g., if the face was momentarily blocked from
-         * view).
-         */
+        //        Proses yang dilakukan jika wajah tertutup suatu barang/ tidak terlihat jelas
         @Override
         public void onMissing(FaceDetector.Detections<Face> detectionResults) {
             mOverlay.remove(mFaceGraphic);
         }
 
-        /**
-         * Called when the face is assumed to be gone for good. Remove the graphic annotation from
-         * the overlay.
-         */
+        //        Proses yang dilakukan jika wajah benar benar tidak terdeteksi
         @Override
         public void onDone() {
+//            Mengurangi count pendeteksian wajah
             faceNumber--;
             mOverlay.remove(mFaceGraphic);
         }

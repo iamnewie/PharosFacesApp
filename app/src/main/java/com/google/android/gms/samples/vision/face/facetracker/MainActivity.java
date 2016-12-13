@@ -41,7 +41,8 @@ import android.util.Log;
 
 
 public final class MainActivity extends AppCompatActivity {
-    //    Apps mempunyai 3 fragment yang di bind dengan viewpager
+
+//    Apps mempunyai 3 fragment yang di bind dengan viewpager
     int NUM_PAGES = 3;
 
     ViewPager viewPager;
@@ -55,6 +56,8 @@ public final class MainActivity extends AppCompatActivity {
     //    Target Wifi BSSID dan SSID
     private static String TARGET_WIFI_BSSID = "00:26:5a:42:de:4e";
     private static String TARGET_WIFI_SSID = "Nelson";
+//    ------------------------------------------------------
+
 
     //    Username kalo uda login
     String username = "";
@@ -94,8 +97,10 @@ public final class MainActivity extends AppCompatActivity {
         wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         wifiConfiguration = new WifiConfiguration();
 
+//        Registrasikan broadcast receiver
         registerReceiver(new wifiEnabled(wifiManager), intentFilter);
         registerReceiver(new wifiConnecting(wifiManager), connectionIntentFilter);
+//        ---------------------------------------
 
 //       -------- Deklarasi view pager---------
         viewPager = (ViewPager) findViewById(R.id.fragmentFrame);
@@ -108,11 +113,11 @@ public final class MainActivity extends AppCompatActivity {
     }
 
 
-    //    Class sebuah broadcast receiver yang listen adanya perubahan pada state wifi
+    //    Class sebuah broadcast receiver yang mendeteksi dan mentrigger sebuah proses jika
+//    ada perubahan pada state wifi, contohnya jika wifi di matikan secara tiba tiba
     class wifiEnabled extends BroadcastReceiver {
 
         WifiManager wifiManager;
-        ProgressDialog progressDialog;
 
         wifiEnabled(WifiManager wifiManager) {
             this.wifiManager = wifiManager;
@@ -122,8 +127,6 @@ public final class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
 
             int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
-            NetworkInfo networkInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
-
             switch (wifiState) {
 //              ---------------jika wifi belom di nyalakan-------------
                 case WifiManager.WIFI_STATE_DISABLED: {
@@ -153,9 +156,14 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
+
+//    Broadcast receiver yang mendeteksi dan mentrigger sebuah proses jika ada
+//    perubahan pada informasi network, misalkan adanya perubahan jaringan wifi
+
     class wifiConnecting extends BroadcastReceiver {
 
-        //        Membuat sebuah semaphore receiver hanya dapat sekali, karena terdapat bug dimana broadcast receiver menerima lebih dari sekali
+        //        Membuat sebuah semaphore receiver hanya dapat sekali,
+//        karena terdapat bug dimana broadcast receiver menerima lebih dari sekali
         boolean firstConnect = true;
 
         WifiManager wifiManager;
@@ -182,19 +190,25 @@ public final class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+//        Mengecek koneksi jaringan wifi setiap kali user masuk ke apps
         checkWifi(wifiManager);
     }
 
     void checkWifi(final WifiManager wifiManager) {
         Log.d("WIFI CHECK", wifiManager.getConnectionInfo().toString());
 
+//        Memeriksa jika wifi yang terkoneksi merupakan wifi yang diinginkan
+//        atau bukan
         if (wifiManager.getConnectionInfo().getBSSID() == null || wifiManager.getConnectionInfo().getBSSID().toString().compareTo(TARGET_WIFI_BSSID) != 0) {
+//            Menampilkan sebuah alert dialog yang meminta user untuk melakukan koneksi ke wifi
+//            dengan ssid yang diinginkan
             new AlertDialog.Builder(this)
                     .setMessage("Please Connect to wifi network named '" + TARGET_WIFI_SSID + "'")
                     .setPositiveButton("Connect to wifi", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             dialogInterface.dismiss();
+//                            User dialihkan ke setting wifi untuk melakukan koneksi ke wifi tujuan
                             startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
                         }
                     })
@@ -204,11 +218,13 @@ public final class MainActivity extends AppCompatActivity {
                             finish();
                         }
                     })
+                    .setCancelable(false)
                     .show();
             return;
         }
     }
 
+    //    Class viewpageslider pada activity
     private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
 
         Fragment CameraFragment;
@@ -222,6 +238,7 @@ public final class MainActivity extends AppCompatActivity {
             this.ScheduleFragment = ScheduleFragment;
         }
 
+        //    Mengubah fragment jika berada pada posisi tertentu
         @Override
         public Fragment getItem(int position) {
             Log.d("Position Count", String.valueOf(position));
@@ -242,6 +259,7 @@ public final class MainActivity extends AppCompatActivity {
     }
 
 
+    //    Getter dan setter variable username
     public void setUsername(String username) {
         this.username = username;
     }
