@@ -130,8 +130,18 @@ public class LoginFragment extends Fragment {
             if (response.contains("success")) {
                 String array[] = response.split(";");
                 userId = array[1];
-                Toast.makeText(getContext(), "Login Success", Toast.LENGTH_SHORT).show();
-                //kirim username ke activity
+
+                //Tampilkan login success
+                //Toast.makeText(getContext(), "Login Success", Toast.LENGTH_SHORT).show();
+                new AlertDialog.Builder(getContext())
+                        .setMessage("Login success")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+
                 if (!username.equals("")) {
                     //kirim username ke MainActivity
                     ((MainActivity) getActivity()).setUsername(username);
@@ -149,9 +159,28 @@ public class LoginFragment extends Fragment {
                     sharedPreferencesEditor.commit();
                 }
             }
+            else if(response.contains("fail")){
+                //Tampilkan login fail
+                //Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
+                new AlertDialog.Builder(getContext())
+                        .setMessage("Login failed")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+            }
             else {
-                //Tampilkan login success / fail
-                Toast.makeText(getContext(), "Login " + response, Toast.LENGTH_SHORT).show();
+                //Kalo sudah login hari ini
+                new AlertDialog.Builder(getContext())
+                        .setMessage("You have logged in today.")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
             }
             inputStreamReader.close();
             reader.close();
