@@ -231,7 +231,8 @@ public class CameraFragment extends Fragment {
                         @Override
                         public void onPictureTaken(byte[] bytes) {
                             try {
-                                capturePic(bytes);
+                                new listenTask(bytes).execute();
+//                                capturePic(bytes);
                             } catch (Exception e) {
                                 Log.d(TAG, "FACE NOT FOUND");
                             }
@@ -242,6 +243,81 @@ public class CameraFragment extends Fragment {
         });
     }
 
+    private void confirmTaskDialog(Boolean confirmTaskBool) {
+
+        try {
+            if (confirmTaskBool) {
+                socket.close();
+
+                ((MainActivity) getActivity()).setUsername(username);
+                preferenceseditor.putBoolean("Logout", true);
+                preferenceseditor.putBoolean("Camera", false);
+                preferenceseditor.putString("UserID", userId);
+                preferenceseditor.putString("Username", username);
+                cameraButton.setEnabled(false);
+                cameraButton.setClickable(false);
+                logoutButton.setEnabled(true);
+                logoutButton.setClickable(true);
+                logoutButton.setImageResource(R.drawable.icon3_enable);
+                preferenceseditor.commit();
+
+                new AlertDialog.Builder(getContext())
+                        .setMessage("Login success.\n" + "Welcome, " + username + "!\n")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+            }
+            if (!confirmTaskBool) {
+                new AlertDialog.Builder(getContext())
+                        .setMessage("Anda Sudah Absen Hari ini")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void listenTaskDialog() {
+        new AlertDialog.Builder(getContext())
+                .setMessage("Username found. Are you " + username + " ?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        new confirmTask("yes").execute();
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                        try {
+                            dialogInterface.dismiss();
+                            socket.close();
+
+                            new AlertDialog.Builder(getContext())
+                                    .setMessage("Please take your self picture again!")
+                                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            dialogInterface.dismiss();
+                                        }
+                                    }).show();
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).show();
+    }
 
     private void capturePic(byte[] bytes) {
 
@@ -447,6 +523,7 @@ public class CameraFragment extends Fragment {
         protected void onPostExecute(Boolean aBoolean) {
             super.onPostExecute(aBoolean);
             progressDialog.dismiss();
+            listenTaskDialog();
         }
     }
 //    --------------------------------------------------------------------------------------
@@ -513,6 +590,7 @@ public class CameraFragment extends Fragment {
         protected void onPostExecute(Boolean bool) {
             super.onPostExecute(bool);
             progressDialog.dismiss();
+            confirmTaskDialog(bool);
         }
     }
 
