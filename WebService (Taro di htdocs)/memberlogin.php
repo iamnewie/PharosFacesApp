@@ -17,13 +17,21 @@
 	$rows = mysql_num_rows($query);
 	if ($rows == 1) {
 		$id = mysql_fetch_array($query)["id"];
-		$insertQuery = "INSERT INTO log(id,status) VALUES('$id','1')";
-		$retval = mysql_query($insertQuery, $connection);
 		
-		if (! $retval){
-			echo("fail");
+		$checkQuery = mysql_query("SELECT * FROM log WHERE id='$id' AND status=1 AND date>=CURDATE()",$connection);
+		$checkRows = mysql_num_rows($checkQuery);
+		if($checkRows == 0){ //kalo belum pernah login hari ini
+			$insertQuery = "INSERT INTO log(id,status) VALUES('$id','1')";
+			$retval = mysql_query($insertQuery, $connection);
+			
+			if (! $retval){
+				echo("fail");
+			}
+			else echo("success");
 		}
-		else echo("success;$id");
+		else echo "doublelogin";
+		
+		
 	} 
 	else {
 		echo "failed";
